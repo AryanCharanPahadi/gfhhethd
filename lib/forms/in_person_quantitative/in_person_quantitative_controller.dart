@@ -39,20 +39,34 @@ class InPersonQuantitativeController extends GetxController with BaseController 
   final TextEditingController writeResolutionController = TextEditingController();
   final TextEditingController participantsNameController = TextEditingController();
 
+  void clearTrainingInputs() {
 
+   correctUdiseCodeController.clear();
+    update(); // Update the UI after clearing
+  }
 
   // Map to store selected values for radio buttons
   final Map<String, String?> _selectedValues = {};
-  String? getSelectedValue(String key) => _selectedValues[key];
 
   // Map to store error states for radio buttons
   final Map<String, bool> _radioFieldErrors = {};
+
+  // Method to get the selected value for a given key
+  String? getSelectedValue(String key) => _selectedValues[key];
+
+  // Method to get the error state for a given key
   bool getRadioFieldError(String key) => _radioFieldErrors[key] ?? false;
 
   // Method to set the selected value and clear any previous error
   void setRadioValue(String key, String? value) {
     _selectedValues[key] = value;
     _radioFieldErrors[key] = false; // Clear error when a value is selected
+    update(); // Update the UI
+  }
+
+  // Method to clear the selected value for a given key
+  void clearRadioValue(String key) {
+    _selectedValues[key] = null; // Clear the value
     update(); // Update the UI
   }
 
@@ -67,6 +81,8 @@ class InPersonQuantitativeController extends GetxController with BaseController 
     update(); // Update the UI
     return true;
   }
+
+
   List<String> splitSchoolLists = [];
 
 

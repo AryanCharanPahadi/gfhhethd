@@ -352,7 +352,7 @@ class _InPersonQuantitativeState extends State<InPersonQuantitative> {
                                                 inPersonQuantitativeController
                                                     .setRadioValue(
                                                         'udiCode', value);
-                                              },
+                                                inPersonQuantitativeController.clearTrainingInputs();                                              },
                                             ),
                                             const Text('No'),
                                           ],
@@ -392,6 +392,12 @@ class _InPersonQuantitativeState extends State<InPersonQuantitative> {
                                               inPersonQuantitativeController
                                                   .correctUdiseCodeController,
                                           textInputType: TextInputType.number,
+                                          inputFormatters: [
+                                            LengthLimitingTextInputFormatter(
+                                                13),
+                                            FilteringTextInputFormatter
+                                                .digitsOnly,
+                                          ],
                                           labelText: 'Enter correct UDISE code',
                                           validator: (value) {
                                             if (value == null ||
@@ -645,26 +651,20 @@ inPersonQuantitativeController                                                  
                                         side: 'height',
                                       ),
                                       LabelText(
-                                        label:
-                                            '1. Is DigiLab Schedule/timetable available?',
+                                        label: '1. Is DigiLab Schedule/timetable available?',
                                         astrick: true,
                                       ),
                                       Padding(
-                                        padding:
-                                            const EdgeInsets.only(right: 300),
+                                        padding: const EdgeInsets.only(right: 300),
                                         child: Row(
                                           children: [
                                             Radio(
                                               value: 'Yes',
-                                              groupValue:
-                                                  inPersonQuantitativeController
-                                                      .getSelectedValue(
-                                                          'digiLabSchedule'),
+                                              groupValue: inPersonQuantitativeController.getSelectedValue('digiLabSchedule'),
                                               onChanged: (value) {
-                                                inPersonQuantitativeController
-                                                    .setRadioValue(
-                                                        'digiLabSchedule',
-                                                        value);
+                                                setState(() {
+                                                  inPersonQuantitativeController.setRadioValue('digiLabSchedule', value);
+                                                });
                                               },
                                             ),
                                             const Text('Yes'),
@@ -675,40 +675,36 @@ inPersonQuantitativeController                                                  
                                         value: 150,
                                         side: 'width',
                                       ),
-                                      // make it that user can also edit the tourId and school
                                       Padding(
-                                        padding:
-                                            const EdgeInsets.only(right: 300),
+                                        padding: const EdgeInsets.only(right: 300),
                                         child: Row(
                                           children: [
                                             Radio(
                                               value: 'No',
-                                              groupValue:
-                                                  inPersonQuantitativeController
-                                                      .getSelectedValue(
-                                                          'digiLabSchedule'),
+                                              groupValue: inPersonQuantitativeController.getSelectedValue('digiLabSchedule'),
                                               onChanged: (value) {
-                                                inPersonQuantitativeController
-                                                    .setRadioValue(
-                                                        'digiLabSchedule',
-                                                        value);
+                                                setState(() {
+                                                  inPersonQuantitativeController.setRadioValue('digiLabSchedule', value);
+
+                                                  // Clear the selection for 'class2Hours' when 'No' is selected for 'digiLabSchedule'
+                                                  if (value == 'No') {
+                                                    inPersonQuantitativeController.clearRadioValue('class2Hours');
+                                                  }
+                                                });
                                               },
                                             ),
                                             const Text('No'),
                                           ],
                                         ),
                                       ),
-                                      if (inPersonQuantitativeController
-                                          .getRadioFieldError(
-                                              'digiLabSchedule'))
+                                      if (inPersonQuantitativeController.getRadioFieldError('digiLabSchedule'))
                                         const Padding(
                                           padding: EdgeInsets.only(left: 16.0),
                                           child: Align(
                                             alignment: Alignment.centerLeft,
                                             child: Text(
                                               'Please select an option',
-                                              style:
-                                                  TextStyle(color: Colors.red),
+                                              style: TextStyle(color: Colors.red),
                                             ),
                                           ),
                                         ),
@@ -716,30 +712,24 @@ inPersonQuantitativeController                                                  
                                         value: 20,
                                         side: 'height',
                                       ),
-                                      if (inPersonQuantitativeController
-                                              .getSelectedValue(
-                                                  'digiLabSchedule') ==
-                                          'Yes') ...[
+
+// Only show the next section if 'digiLabSchedule' is 'Yes'
+                                      if (inPersonQuantitativeController.getSelectedValue('digiLabSchedule') == 'Yes') ...[
                                         LabelText(
-                                          label:
-                                              '1.1. Each class scheduled for 2 hours per week?',
+                                          label: '1.1. Each class scheduled for 2 hours per week?',
                                           astrick: true,
                                         ),
                                         Padding(
-                                          padding:
-                                              const EdgeInsets.only(right: 300),
+                                          padding: const EdgeInsets.only(right: 300),
                                           child: Row(
                                             children: [
                                               Radio(
                                                 value: 'Yes',
-                                                groupValue:
-                                                    inPersonQuantitativeController
-                                                        .getSelectedValue(
-                                                            'class2Hours'),
+                                                groupValue: inPersonQuantitativeController.getSelectedValue('class2Hours'),
                                                 onChanged: (value) {
-                                                  inPersonQuantitativeController
-                                                      .setRadioValue(
-                                                          'class2Hours', value);
+                                                  setState(() {
+                                                    inPersonQuantitativeController.setRadioValue('class2Hours', value);
+                                                  });
                                                 },
                                               ),
                                               const Text('Yes'),
@@ -750,39 +740,31 @@ inPersonQuantitativeController                                                  
                                           value: 150,
                                           side: 'width',
                                         ),
-                                        // make it that user can also edit the tourId and school
                                         Padding(
-                                          padding:
-                                              const EdgeInsets.only(right: 300),
+                                          padding: const EdgeInsets.only(right: 300),
                                           child: Row(
                                             children: [
                                               Radio(
                                                 value: 'No',
-                                                groupValue:
-                                                    inPersonQuantitativeController
-                                                        .getSelectedValue(
-                                                            'class2Hours'),
+                                                groupValue: inPersonQuantitativeController.getSelectedValue('class2Hours'),
                                                 onChanged: (value) {
-                                                  inPersonQuantitativeController
-                                                      .setRadioValue(
-                                                          'class2Hours', value);
+                                                  setState(() {
+                                                    inPersonQuantitativeController.setRadioValue('class2Hours', value);
+                                                  });
                                                 },
                                               ),
                                               const Text('No'),
                                             ],
                                           ),
                                         ),
-                                        if (inPersonQuantitativeController
-                                            .getRadioFieldError('class2Hours'))
+                                        if (inPersonQuantitativeController.getRadioFieldError('class2Hours'))
                                           const Padding(
-                                            padding:
-                                                EdgeInsets.only(left: 16.0),
+                                            padding: EdgeInsets.only(left: 16.0),
                                             child: Align(
                                               alignment: Alignment.centerLeft,
                                               child: Text(
                                                 'Please select an option',
-                                                style: TextStyle(
-                                                    color: Colors.red),
+                                                style: TextStyle(color: Colors.red),
                                               ),
                                             ),
                                           ),
@@ -790,7 +772,8 @@ inPersonQuantitativeController                                                  
                                           value: 20,
                                           side: 'height',
                                         ),
-                                      ],
+
+                                    ],
 
                                       LabelText(
                                         label:
@@ -945,6 +928,11 @@ inPersonQuantitativeController                                                  
                                                     .setRadioValue(
                                                         'isDigiLabAdminAppointed',
                                                         value);
+                                                if (value == 'No') {
+                                                  inPersonQuantitativeController.clearRadioValue('isDigiLabAdminTrained');
+                                                  inPersonQuantitativeController.digiLabAdminNameController.clear();
+                                                  inPersonQuantitativeController.digiLabAdminPhoneNumberController.clear();
+                                                }
                                               },
                                             ),
                                             const Text('No'),
@@ -1229,7 +1217,10 @@ inPersonQuantitativeController                                                  
                                                     .setRadioValue(
                                                         'idHasBeenCreated',
                                                         value);
-                                                setState(() {}); // Triggers UI update
+                                                if (value == 'No') {
+                                                  inPersonQuantitativeController.clearRadioValue('teacherUsingTablet');
+
+                                                }
                                               },
                                             ),
                                             const Text('No'),

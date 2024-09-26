@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
+import 'package:flutter/services.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:path_provider/path_provider.dart'; // For a safer directory path handling
 
@@ -642,6 +643,7 @@ class _FlnObservationFormState extends State<FlnObservationForm> {
                                                     flnObservationController
                                                         .setRadioValue(
                                                             'udiCode', value);
+                                                    flnObservationController.correctUdiseCodeController.clear();
                                                   },
                                                 ),
                                                 const Text('Yes'),
@@ -711,6 +713,12 @@ class _FlnObservationFormState extends State<FlnObservationForm> {
                                                       .correctUdiseCodeController,
                                               textInputType:
                                                   TextInputType.number,
+                                              inputFormatters: [
+                                                LengthLimitingTextInputFormatter(
+                                                    13),
+                                                FilteringTextInputFormatter
+                                                    .digitsOnly,
+                                              ],
                                               labelText:
                                                   'Enter correct UDISE code',
                                               validator: (value) {
@@ -1334,6 +1342,7 @@ class _FlnObservationFormState extends State<FlnObservationForm> {
                                                         .setRadioValue(
                                                             'activityCorner',
                                                             value);
+                                                    flnObservationController.clearTrainingInputs();
                                                   },
                                                 ),
                                                 const Text('No'),
@@ -2081,6 +2090,8 @@ class _FlnObservationFormState extends State<FlnObservationForm> {
                                                         .setRadioValue(
                                                             'flnActivities',
                                                             value);
+                                                    flnObservationController.clearTrainingInputs2();
+
                                                   },
                                                 ),
                                                 const Text('No'),
@@ -2525,6 +2536,8 @@ class _FlnObservationFormState extends State<FlnObservationForm> {
                                                         .setRadioValue(
                                                             'refresherTraining',
                                                             value);
+                                                    flnObservationController.clearTrainingInputs3();
+
                                                   },
                                                 ),
                                                 const Text('No'),
@@ -2844,6 +2857,8 @@ class _FlnObservationFormState extends State<FlnObservationForm> {
                                                     flnObservationController
                                                         .setRadioValue(
                                                             'reading', value);
+                                                    flnObservationController.clearTrainingInputs4();
+
                                                   },
                                                 ),
                                                 const Text('No'),

@@ -112,9 +112,17 @@ class _CabMeterTracingFormState extends State<CabMeterTracingForm> {
                             side: 'height',
                           ),
                           CustomTextFormField(
-                            textController:
-                                cabMeterController.placeVisitedController,
+                            textController: cabMeterController.placeVisitedController,
                             labelText: 'Place Visited',
+                            textCapitalization: TextCapitalization.characters, // This makes the keyboard capitalize all characters
+                            onChanged: (value) {
+                              // Automatically convert the input to uppercase
+                              cabMeterController.placeVisitedController.value =
+                                  TextEditingValue(
+                                    text: value.toUpperCase(),
+                                    selection: cabMeterController.placeVisitedController.selection,
+                                  );
+                            },
                             validator: (value) {
                               if (value!.isEmpty) {
                                 return 'Please Enter Place Visited';
@@ -122,6 +130,7 @@ class _CabMeterTracingFormState extends State<CabMeterTracingForm> {
                               return null;
                             },
                           ),
+
                           CustomSizedBox(
                             value: 20,
                             side: 'height',
@@ -138,6 +147,8 @@ class _CabMeterTracingFormState extends State<CabMeterTracingForm> {
                             textController:
                                 cabMeterController.VehicleNumberController,
                             labelText: 'Vehicle Number',
+                            textCapitalization: TextCapitalization.characters, // This makes the keyboard capitalize all characters
+
                             validator: (value) {
                               if (value!.isEmpty) {
                                 return 'Please Enter Vehicle Number';
@@ -166,6 +177,8 @@ class _CabMeterTracingFormState extends State<CabMeterTracingForm> {
                           CustomTextFormField(
                             textController:
                                 cabMeterController.driverNameController,
+                            textCapitalization: TextCapitalization.characters, // This makes the keyboard capitalize all characters
+
                             labelText: 'Driver Name',
                             validator: (value) {
                               if (value!.isEmpty) {

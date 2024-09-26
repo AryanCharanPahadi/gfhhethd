@@ -185,7 +185,29 @@ class FlnObservationController extends GetxController with BaseController{
         .join(','); // Return the combined Base64 strings with ',' as separator
   }
 
+  void clearTrainingInputs() {
 
+    multipleImage4.clear();
+    update(); // Update the UI after clearing
+  }
+
+  void clearTrainingInputs2() {
+
+    multipleImage6.clear();
+    update(); // Update the UI after clearing
+  }
+
+  void clearTrainingInputs3() {
+    noOfTeacherTrainedController.clear();
+    multipleImage7.clear();
+    update(); // Update the UI after clearing
+  }
+
+  void clearTrainingInputs4() {
+
+    multipleImage8.clear();
+    update(); // Update the UI after clearing
+  }
 
   // Convert a File to Base64 String
   Future<String> convertImagesToBase64_2() async {

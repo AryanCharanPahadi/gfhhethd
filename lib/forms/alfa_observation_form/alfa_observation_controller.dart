@@ -858,6 +858,19 @@ class AlfaObservationController extends GetxController with BaseController{
     );
   }
 
+  void clearTrainingInputs() {
+    noOfTeacherTrainedController.clear();
+    multipleImage5.clear();
+    update(); // Update the UI after clearing
+  }
+
+  void clearTrainingInputs2() {
+
+    multipleImage6.clear();
+    update(); // Update the UI after clearing
+  }
+
+
   Widget bottomSheet4(BuildContext context) {
     return Container(
       color: AppColors.primary,
