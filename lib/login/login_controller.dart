@@ -25,7 +25,7 @@ class LoginController extends GetxController with BaseController {
     });
     if (response == null) return;
     var myresp = json.decode(response);
-      hideLoading();
+    hideLoading();
 
     return myresp;
   }

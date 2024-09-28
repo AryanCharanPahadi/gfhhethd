@@ -16,6 +16,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:path_provider/path_provider.dart';
 
 import '../../base_client/baseClient_controller.dart';
 class FlnObservationController extends GetxController with BaseController{
@@ -65,6 +66,12 @@ class FlnObservationController extends GetxController with BaseController{
   }
 
 
+  // Method to clear the selected value for a given key
+  void clearRadioValue(String key) {
+    _selectedValues[key] = null; // Clear the value
+    update(); // Update the UI
+  }
+
 
   //Focus nodes
   final FocusNode _tourIdFocusNode = FocusNode();
@@ -79,840 +86,339 @@ class FlnObservationController extends GetxController with BaseController{
   List<XFile> get multipleImage => _multipleImage;
   List<String> _imagePaths = [];
   List<String> get imagePaths => _imagePaths;
-  // This will hold the converted list of File objects
-  List<File> _imageFiles = [];
-  List<File> get imageFiles => _imageFiles;
-
 
   final List<XFile> _multipleImage2 = [];
   List<XFile> get multipleImage2 => _multipleImage2;
+
   List<String> _imagePaths2 = [];
   List<String> get imagePaths2 => _imagePaths2;
-  List<File> _imageFiles2 = [];
-  List<File> get imageFiles2 => _imageFiles2;
 
 
   final List<XFile> _multipleImage3 = [];
   List<XFile> get multipleImage3 => _multipleImage3;
+
   List<String> _imagePaths3 = [];
   List<String> get imagePaths3 => _imagePaths3;
-  List<File> _imageFiles3 = [];
-  List<File> get imageFiles3 => _imageFiles3;
 
   final List<XFile> _multipleImage4 = [];
   List<XFile> get multipleImage4 => _multipleImage4;
+
   List<String> _imagePaths4 = [];
   List<String> get imagePaths4 => _imagePaths4;
-  List<File> _imageFiles4 = [];
-  List<File> get imageFiles4 => _imageFiles4;
 
 
   final List<XFile> _multipleImage5 = [];
   List<XFile> get multipleImage5 => _multipleImage5;
+
   List<String> _imagePaths5 = [];
   List<String> get imagePaths5 => _imagePaths5;
-  List<File> _imageFiles5 = [];
-  List<File> get imageFiles5 => _imageFiles5;
 
 
   final List<XFile> _multipleImage6 = [];
   List<XFile> get multipleImage6 => _multipleImage6;
+
   List<String> _imagePaths6 = [];
   List<String> get imagePaths6 => _imagePaths6;
-  List<File> _imageFiles6 = [];
-  List<File> get imageFiles6 => _imageFiles6;
 
 
 
   final List<XFile> _multipleImage7 = [];
   List<XFile> get multipleImage7 => _multipleImage7;
+
   List<String> _imagePaths7 = [];
   List<String> get imagePaths7 => _imagePaths7;
-  List<File> _imageFiles7 = [];
-  List<File> get imageFiles7 => _imageFiles7;
+
 
   final List<XFile> _multipleImage8 = [];
   List<XFile> get multipleImage8 => _multipleImage8;
+
   List<String> _imagePaths8 = [];
   List<String> get imagePaths8 => _imagePaths8;
-  List<File> _imageFiles8 = [];
-  List<File> get imageFiles8 => _imageFiles8;
+
 
 
   final List<XFile> _multipleImage9 = [];
   List<XFile> get multipleImage9 => _multipleImage9;
+
   List<String> _imagePaths9 = [];
   List<String> get imagePaths9 => _imagePaths9;
-  List<File> _imageFiles9 = [];
-  List<File> get imageFiles9 => _imageFiles9;
 
+  Future<String> compressImage(String imagePath) async {
+    // Load the image
+    final File imageFile = File(imagePath);
+    final img.Image? originalImage = img.decodeImage(imageFile.readAsBytesSync());
 
-// Function to add padding to the Base64 string if needed
-  String _addPadding(String base64) {
-    int padding = base64.length % 4;
-    if (padding > 0) {
-      base64 += '=' * (4 - padding); // Add '=' characters for padding
-    }
-    return base64;
+    if (originalImage == null) return imagePath; // Return original path if decoding fails
+
+    // Resize the image (optional) and compress
+    final img.Image resizedImage = img.copyResize(originalImage, width: 768); // Change the width as needed
+    final List<int> compressedImage = img.encodeJpg(resizedImage, quality: 25); // Adjust quality (0-100)
+
+    // Save the compressed image to a new file
+    final Directory appDir = await getTemporaryDirectory();
+    final String compressedImagePath = '${appDir.path}/compressed_${DateTime.now().millisecondsSinceEpoch}.jpg';
+    final File compressedFile = File(compressedImagePath);
+    await compressedFile.writeAsBytes(compressedImage);
+
+    return compressedImagePath; // Return the path of the compressed image
   }
 
-
-  // Convert a File to Base64 String
-  Future<String> convertImagesToBase64() async {
-    List<String> base64Images = [];
-
-    for (var imageFile in _imageFiles) {
-      if (await imageFile.exists()) {
-        // Check if the file exists
-        final bytes = await imageFile.readAsBytes(); // Read the file as bytes
-        final base64String = base64Encode(bytes); // Encode the bytes to Base64
-
-        // Ensure the Base64 string is valid and properly padded
-        if (base64String.isNotEmpty) {
-          // Add padding if necessary
-          final paddedBase64String = _addPadding(base64String);
-
-          // Add to the list with a comma as the separator
-          base64Images.add(paddedBase64String);
-        }
-      } else {
-        print("File ${imageFile.path} does not exist.");
-      }
-    }
-
-    // Join all Base64 strings with a comma as the separator
-    return base64Images
-        .join(','); // Return the combined Base64 strings with ',' as separator
-  }
-
-  void clearTrainingInputs() {
-
-    multipleImage4.clear();
-    update(); // Update the UI after clearing
-  }
-
-  void clearTrainingInputs2() {
-
-    multipleImage6.clear();
-    update(); // Update the UI after clearing
-  }
-
-  void clearTrainingInputs3() {
-    noOfTeacherTrainedController.clear();
-    multipleImage7.clear();
-    update(); // Update the UI after clearing
-  }
-
-  void clearTrainingInputs4() {
-
-    multipleImage8.clear();
-    update(); // Update the UI after clearing
-  }
-
-  // Convert a File to Base64 String
-  Future<String> convertImagesToBase64_2() async {
-    List<String> base64Images2 = [];
-
-    for (var imageFile in _imageFiles2) {
-      if (await imageFile.exists()) {
-        // Check if the file exists
-        final bytes = await imageFile.readAsBytes(); // Read the file as bytes
-        final base64String = base64Encode(bytes); // Encode the bytes to Base64
-
-        // Ensure the Base64 string is valid and properly padded
-        if (base64String.isNotEmpty) {
-          // Add padding if necessary
-          final paddedBase64String = _addPadding(base64String);
-
-          // Add to the list with a comma as the separator
-          base64Images2.add(paddedBase64String);
-        }
-      } else {
-        print("File ${imageFile.path} does not exist.");
-      }
-    }
-
-    // Join all Base64 strings with a comma as the separator
-    return base64Images2
-        .join(','); // Return the combined Base64 strings with ',' as separator
-  }
-
-
-
-
-  // Convert a File to Base64 String
-  Future<String> convertImagesToBase64_3() async {
-    List<String> base64Images3 = [];
-
-    for (var imageFile in _imageFiles3) {
-      if (await imageFile.exists()) {
-        // Check if the file exists
-        final bytes = await imageFile.readAsBytes(); // Read the file as bytes
-        final base64String = base64Encode(bytes); // Encode the bytes to Base64
-
-        // Ensure the Base64 string is valid and properly padded
-        if (base64String.isNotEmpty) {
-          // Add padding if necessary
-          final paddedBase64String = _addPadding(base64String);
-
-          // Add to the list with a comma as the separator
-          base64Images3.add(paddedBase64String);
-        }
-      } else {
-        print("File ${imageFile.path} does not exist.");
-      }
-    }
-
-    // Join all Base64 strings with a comma as the separator
-    return base64Images3
-        .join(','); // Return the combined Base64 strings with ',' as separator
-  }
-
-// Convert a File to Base64 String
-  // Convert a File to Base64 String
-  Future<String> convertImagesToBase64_4() async {
-    List<String> base64Images4 = [];
-
-    for (var imageFile in _imageFiles4) {
-      if (await imageFile.exists()) {
-        // Check if the file exists
-        final bytes = await imageFile.readAsBytes(); // Read the file as bytes
-        final base64String = base64Encode(bytes); // Encode the bytes to Base64
-
-        // Ensure the Base64 string is valid and properly padded
-        if (base64String.isNotEmpty) {
-          // Add padding if necessary
-          final paddedBase64String = _addPadding(base64String);
-
-          // Add to the list with a comma as the separator
-          base64Images4.add(paddedBase64String);
-        }
-      } else {
-        print("File ${imageFile.path} does not exist.");
-      }
-    }
-
-    // Join all Base64 strings with a comma as the separator
-    return base64Images4
-        .join(','); // Return the combined Base64 strings with ',' as separator
-  }
-
-  // Convert a File to Base64 String
-  // Convert a File to Base64 String
-  Future<String> convertImagesToBase64_5() async {
-    List<String> base64Images5 = [];
-
-    for (var imageFile in _imageFiles5) {
-      if (await imageFile.exists()) {
-        // Check if the file exists
-        final bytes = await imageFile.readAsBytes(); // Read the file as bytes
-        final base64String = base64Encode(bytes); // Encode the bytes to Base64
-
-        // Ensure the Base64 string is valid and properly padded
-        if (base64String.isNotEmpty) {
-          // Add padding if necessary
-          final paddedBase64String = _addPadding(base64String);
-
-          // Add to the list with a comma as the separator
-          base64Images5.add(paddedBase64String);
-        }
-      } else {
-        print("File ${imageFile.path} does not exist.");
-      }
-    }
-
-    // Join all Base64 strings with a comma as the separator
-    return base64Images5
-        .join(','); // Return the combined Base64 strings with ',' as separator
-  }
-
-  // Convert a File to Base64 String
-  // Convert a File to Base64 String
-  Future<String> convertImagesToBase64_6() async {
-    List<String> base64Images6 = [];
-
-    for (var imageFile in _imageFiles6) {
-      if (await imageFile.exists()) {
-        // Check if the file exists
-        final bytes = await imageFile.readAsBytes(); // Read the file as bytes
-        final base64String = base64Encode(bytes); // Encode the bytes to Base64
-
-        // Ensure the Base64 string is valid and properly padded
-        if (base64String.isNotEmpty) {
-          // Add padding if necessary
-          final paddedBase64String = _addPadding(base64String);
-
-          // Add to the list with a comma as the separator
-          base64Images6.add(paddedBase64String);
-        }
-      } else {
-        print("File ${imageFile.path} does not exist.");
-      }
-    }
-
-    // Join all Base64 strings with a comma as the separator
-    return base64Images6
-        .join(','); // Return the combined Base64 strings with ',' as separator
-  }
-
-  // Convert a File to Base64 String
-  // Convert a File to Base64 String
-  Future<String> convertImagesToBase64_7() async {
-    List<String> base64Images7 = [];
-
-    for (var imageFile in _imageFiles7) {
-      if (await imageFile.exists()) {
-        // Check if the file exists
-        final bytes = await imageFile.readAsBytes(); // Read the file as bytes
-        final base64String = base64Encode(bytes); // Encode the bytes to Base64
-
-        // Ensure the Base64 string is valid and properly padded
-        if (base64String.isNotEmpty) {
-          // Add padding if necessary
-          final paddedBase64String = _addPadding(base64String);
-
-          // Add to the list with a comma as the separator
-          base64Images7.add(paddedBase64String);
-        }
-      } else {
-        print("File ${imageFile.path} does not exist.");
-      }
-    }
-
-    // Join all Base64 strings with a comma as the separator
-    return base64Images7
-        .join(','); // Return the combined Base64 strings with ',' as separator
-  }
-
-  Future<String> convertImagesToBase64_8() async {
-    List<String> base64Images8 = [];
-
-    for (var imageFile in _imageFiles8) {
-      if (await imageFile.exists()) {
-        // Check if the file exists
-        final bytes = await imageFile.readAsBytes(); // Read the file as bytes
-        final base64String = base64Encode(bytes); // Encode the bytes to Base64
-
-        // Ensure the Base64 string is valid and properly padded
-        if (base64String.isNotEmpty) {
-          // Add padding if necessary
-          final paddedBase64String = _addPadding(base64String);
-
-          // Add to the list with a comma as the separator
-          base64Images8.add(paddedBase64String);
-        }
-      } else {
-        print("File ${imageFile.path} does not exist.");
-      }
-    }
-
-    // Join all Base64 strings with a comma as the separator
-    return base64Images8
-        .join(','); // Return the combined Base64 strings with ',' as separator
-  }
-
-
-  Future<String> convertImagesToBase64_9() async {
-    List<String> base64Images9 = [];
-
-    for (var imageFile in _imageFiles9) {
-      if (await imageFile.exists()) {
-        // Check if the file exists
-        final bytes = await imageFile.readAsBytes(); // Read the file as bytes
-        final base64String = base64Encode(bytes); // Encode the bytes to Base64
-
-        // Ensure the Base64 string is valid and properly padded
-        if (base64String.isNotEmpty) {
-          // Add padding if necessary
-          final paddedBase64String = _addPadding(base64String);
-
-          // Add to the list with a comma as the separator
-          base64Images9.add(paddedBase64String);
-        }
-      } else {
-        print("File ${imageFile.path} does not exist.");
-      }
-    }
-
-    // Join all Base64 strings with a comma as the separator
-    return base64Images9
-        .join(','); // Return the combined Base64 strings with ',' as separator
-  }
-
-  // Method to capture or pick photos
-  Future<File?> processImage(File file) async {
-    final img.Image? image = img.decodeImage(await file.readAsBytes());
-    if (image == null) return null;
-
-    // Resize the image to a smaller width while maintaining aspect ratio
-    final img.Image resized =
-    img.copyResize(image, width: 800); // Adjust width as needed
-    final List<int> compressedImage =
-    img.encodeJpg(resized, quality: 80); // Adjust quality as needed
-
-    // Save the processed image to a new file
-    final String newPath = file.path.replaceAll('.jpg', '_processed.jpg');
-    final File newFile = File(newPath)..writeAsBytesSync(compressedImage);
-    return newFile;
-  }
-
-  // Method to capture or pick photos with quality and processing
-  Future<String> takePhoto(ImageSource source, {int imageQuality = 75}) async {
+  Future<String> takePhoto(ImageSource source) async {
     final ImagePicker picker = ImagePicker();
+    List<XFile> selectedImages = [];
+    XFile? pickedImage;
 
     if (source == ImageSource.gallery) {
-      // Pick multiple images from the gallery
-      final List<XFile>? selectedImages =
-      await picker.pickMultiImage(imageQuality: imageQuality);
-      if (selectedImages != null) {
-        for (XFile xfile in selectedImages) {
-          final File file = File(xfile.path);
-          final processedFile = await processImage(file); // Process the image
-          if (processedFile != null) {
-            _multipleImage.add(xfile);
-            _imagePaths.add(processedFile.path); // Use processed image path
-            _imageFiles.add(processedFile); // Add the processed file to the list
-          }
-        }
+      selectedImages = await picker.pickMultiImage();
+      for (var selectedImage in selectedImages) {
+        // Compress each selected image
+        String compressedPath = await compressImage(selectedImage.path);
+        _multipleImage.add(XFile(compressedPath));
+        _imagePaths.add(compressedPath);
       }
+      update();
     } else if (source == ImageSource.camera) {
-      // Let the user take multiple images from the camera
-      bool isTakingPictures = true;
-
-      while (isTakingPictures) {
-        final XFile? pickedImage =
-        await picker.pickImage(source: source, imageQuality: imageQuality);
-        if (pickedImage != null) {
-          final File file = File(pickedImage.path);
-          final processedFile = await processImage(file); // Process the image
-          if (processedFile != null) {
-            _multipleImage.add(pickedImage);
-            _imagePaths.add(processedFile.path); // Use processed image path
-            _imageFiles.add(processedFile); // Add the processed file to the list
-          }
-
-          // Ask the user if they want to take another picture
-          // You may need a UI/dialog here to continue or break the loop
-          isTakingPictures = await askUserToContinueTakingPictures();
-        } else {
-          isTakingPictures = false; // Exit loop if no image is taken
-        }
+      pickedImage = await picker.pickImage(source: source);
+      if (pickedImage != null) {
+        // Compress the picked image
+        String compressedPath = await compressImage(pickedImage.path);
+        _multipleImage.add(XFile(compressedPath));
+        _imagePaths.add(compressedPath);
       }
+      update();
     }
 
-    update(); // Update the UI if necessary
-    return _imagePaths.toString(); // Return the list of paths as a string
+    return _imagePaths.toString();
   }
 
-// This method allows selecting from both the gallery and the camera with compression and processing
-  Future<void> selectMultipleFromGalleryAndCamera({int imageQuality = 75}) async {
-    // First, let the user pick from the gallery
-    await takePhoto(ImageSource.gallery, imageQuality: imageQuality);
 
-    // Then, allow the user to capture multiple images with the camera
-    await takePhoto(ImageSource.camera, imageQuality: imageQuality);
-
-    // Update UI if necessary after picking from both sources
-    update();
-  }
-
-// Function to ask the user if they want to take more pictures from the camera
-// You could show a dialog asking the user if they want to continue
-  Future<bool> askUserToContinueTakingPictures() async {
-    // Placeholder for your UI/dialog logic
-    // Return true to continue taking pictures or false to stop
-    return false; // Change this to actual logic for asking the user
-  }
-// Method to capture or pick photos
-
-// Method to capture or pick photos
-  Future<String> takePhoto2(ImageSource source, {int imageQuality = 75}) async {
+  Future<String> takePhoto2(ImageSource source) async {
     final ImagePicker picker2 = ImagePicker();
+    List<XFile> selectedImages2 = [];
+    XFile? pickedImage;
 
     if (source == ImageSource.gallery) {
-      // Pick multiple images from the gallery
-      final List<XFile>? selectedImages2 =
-      await picker2.pickMultiImage(imageQuality: imageQuality);
-      if (selectedImages2 != null) {
-        for (XFile xfile in selectedImages2) {
-          final File file = File(xfile.path);
-          final processedFile = await processImage(file); // Process the image
-          if (processedFile != null) {
-            _multipleImage2.add(xfile);
-            _imagePaths2.add(processedFile.path); // Use processed image path
-            _imageFiles2.add(processedFile); // Add the processed file to the list
-          }
-        }
+      selectedImages2 = await picker2.pickMultiImage();
+      for (var selectedImage2 in selectedImages2) {
+        // Compress each selected image
+        String compressedPath = await compressImage(selectedImage2.path);
+        _multipleImage2.add(XFile(compressedPath));
+        _imagePaths2.add(compressedPath);
       }
+      update();
     } else if (source == ImageSource.camera) {
-      // Let the user take multiple images from the camera
-      bool isTakingPictures = true;
-
-      while (isTakingPictures) {
-        final XFile? pickedImage =
-        await picker2.pickImage(source: source, imageQuality: imageQuality);
-        if (pickedImage != null) {
-          final File file = File(pickedImage.path);
-          final processedFile = await processImage(file); // Process the image
-          if (processedFile != null) {
-            _multipleImage2.add(pickedImage);
-            _imagePaths2.add(processedFile.path); // Use processed image path
-            _imageFiles2.add(processedFile); // Add the processed file to the list
-          }
-
-          // Ask the user if they want to take another picture
-          // You may need a UI/dialog here to continue or break the loop
-          isTakingPictures = await askUserToContinueTakingPictures();
-        } else {
-          isTakingPictures = false; // Exit loop if no image is taken
-        }
+      pickedImage = await picker2.pickImage(source: source);
+      if (pickedImage != null) {
+        // Compress the picked image
+        String compressedPath = await compressImage(pickedImage.path);
+        _multipleImage2.add(XFile(compressedPath));
+        _imagePaths2.add(compressedPath);
       }
+      update();
     }
 
-    update(); // Update the UI if necessary
-    return _imagePaths2.toString(); // Return the list of paths as a string
+    return _imagePaths2.toString();
   }
 
-  Future<String> takePhoto3(ImageSource source, {int imageQuality = 75}) async {
+  Future<String> takePhoto3(ImageSource source) async {
     final ImagePicker picker3 = ImagePicker();
+    List<XFile> selectedImages3 = [];
+    XFile? pickedImage;
 
     if (source == ImageSource.gallery) {
-      // Pick multiple images from the gallery
-      final List<XFile>? selectedImages3 =
-      await picker3.pickMultiImage(imageQuality: imageQuality);
-      if (selectedImages3 != null) {
-        for (XFile xfile in selectedImages3) {
-          final File file = File(xfile.path);
-          final processedFile = await processImage(file); // Process the image
-          if (processedFile != null) {
-            _multipleImage3.add(xfile);
-            _imagePaths3.add(processedFile.path); // Use processed image path
-            _imageFiles3.add(processedFile); // Add the processed file to the list
-          }
-        }
+      selectedImages3 = await picker3.pickMultiImage();
+      for (var selectedImage3 in selectedImages3) {
+        // Compress each selected image
+        String compressedPath = await compressImage(selectedImage3.path);
+        _multipleImage3.add(XFile(compressedPath));
+        _imagePaths3.add(compressedPath);
       }
+      update();
     } else if (source == ImageSource.camera) {
-      // Let the user take multiple images from the camera
-      bool isTakingPictures = true;
-
-      while (isTakingPictures) {
-        final XFile? pickedImage =
-        await picker3.pickImage(source: source, imageQuality: imageQuality);
-        if (pickedImage != null) {
-          final File file = File(pickedImage.path);
-          final processedFile = await processImage(file); // Process the image
-          if (processedFile != null) {
-            _multipleImage3.add(pickedImage);
-            _imagePaths3.add(processedFile.path); // Use processed image path
-            _imageFiles3.add(processedFile); // Add the processed file to the list
-          }
-
-          // Ask the user if they want to take another picture
-          // You may need a UI/dialog here to continue or break the loop
-          isTakingPictures = await askUserToContinueTakingPictures();
-        } else {
-          isTakingPictures = false; // Exit loop if no image is taken
-        }
+      pickedImage = await picker3.pickImage(source: source);
+      if (pickedImage != null) {
+        // Compress the picked image
+        String compressedPath = await compressImage(pickedImage.path);
+        _multipleImage3.add(XFile(compressedPath));
+        _imagePaths3.add(compressedPath);
       }
+      update();
     }
 
-    update(); // Update the UI if necessary
-    return _imagePaths3.toString(); // Return the list of paths as a string
+    return _imagePaths3.toString();
   }
 
-  Future<String> takePhoto4(ImageSource source, {int imageQuality = 75}) async {
+  Future<String> takePhoto4(ImageSource source) async {
     final ImagePicker picker4 = ImagePicker();
+    List<XFile> selectedImages4 = [];
+    XFile? pickedImage;
 
     if (source == ImageSource.gallery) {
-      // Pick multiple images from the gallery
-      final List<XFile>? selectedImages4 =
-      await picker4.pickMultiImage(imageQuality: imageQuality);
-      if (selectedImages4 != null) {
-        for (XFile xfile in selectedImages4) {
-          final File file = File(xfile.path);
-          final processedFile = await processImage(file); // Process the image
-          if (processedFile != null) {
-            _multipleImage4.add(xfile);
-            _imagePaths4.add(processedFile.path); // Use processed image path
-            _imageFiles4.add(
-                processedFile); // Add the processed file to the list
-          }
-        }
+      selectedImages4 = await picker4.pickMultiImage();
+      for (var selectedImage4 in selectedImages4) {
+        // Compress each selected image
+        String compressedPath = await compressImage(selectedImage4.path);
+        _multipleImage4.add(XFile(compressedPath));
+        _imagePaths4.add(compressedPath);
       }
+      update();
     } else if (source == ImageSource.camera) {
-      // Let the user take multiple images from the camera
-      bool isTakingPictures = true;
-
-      while (isTakingPictures) {
-        final XFile? pickedImage =
-        await picker4.pickImage(source: source, imageQuality: imageQuality);
-        if (pickedImage != null) {
-          final File file = File(pickedImage.path);
-          final processedFile = await processImage(file); // Process the image
-          if (processedFile != null) {
-            _multipleImage4.add(pickedImage);
-            _imagePaths4.add(processedFile.path); // Use processed image path
-            _imageFiles4.add(
-                processedFile); // Add the processed file to the list
-          }
-
-          // Ask the user if they want to take another picture
-          // You may need a UI/dialog here to continue or break the loop
-          isTakingPictures = await askUserToContinueTakingPictures();
-        } else {
-          isTakingPictures = false; // Exit loop if no image is taken
-        }
+      pickedImage = await picker4.pickImage(source: source);
+      if (pickedImage != null) {
+        // Compress the picked image
+        String compressedPath = await compressImage(pickedImage.path);
+        _multipleImage4.add(XFile(compressedPath));
+        _imagePaths4.add(compressedPath);
       }
+      update();
     }
 
-    update(); // Update the UI if necessary
-    return _imagePaths4.toString(); // Return the list of paths as a string
-
+    return _imagePaths4.toString();
   }
 
-// Method to capture or pick photos
-  Future<String> takePhoto5(ImageSource source, {int imageQuality = 75}) async {
+
+  Future<String> takePhoto5(ImageSource source) async {
     final ImagePicker picker5 = ImagePicker();
+    List<XFile> selectedImages5 = [];
+    XFile? pickedImage;
 
     if (source == ImageSource.gallery) {
-      // Pick multiple images from the gallery
-      final List<XFile>? selectedImages5 =
-      await picker5.pickMultiImage(imageQuality: imageQuality);
-      if (selectedImages5 != null) {
-        for (XFile xfile in selectedImages5) {
-          final File file = File(xfile.path);
-          final processedFile = await processImage(file); // Process the image
-          if (processedFile != null) {
-            _multipleImage5.add(xfile);
-            _imagePaths5.add(processedFile.path); // Use processed image path
-            _imageFiles5.add(processedFile); // Add the processed file to the list
-          }
-        }
+      selectedImages5 = await picker5.pickMultiImage();
+      for (var selectedImage5 in selectedImages5) {
+        // Compress each selected image
+        String compressedPath = await compressImage(selectedImage5.path);
+        _multipleImage5.add(XFile(compressedPath));
+        _imagePaths5.add(compressedPath);
       }
+      update();
     } else if (source == ImageSource.camera) {
-      // Let the user take multiple images from the camera
-      bool isTakingPictures = true;
-
-      while (isTakingPictures) {
-        final XFile? pickedImage =
-        await picker5.pickImage(source: source, imageQuality: imageQuality);
-        if (pickedImage != null) {
-          final File file = File(pickedImage.path);
-          final processedFile = await processImage(file); // Process the image
-          if (processedFile != null) {
-            _multipleImage5.add(pickedImage);
-            _imagePaths5.add(processedFile.path); // Use processed image path
-            _imageFiles5.add(processedFile); // Add the processed file to the list
-          }
-
-          // Ask the user if they want to take another picture
-          // You may need a UI/dialog here to continue or break the loop
-          isTakingPictures = await askUserToContinueTakingPictures();
-        } else {
-          isTakingPictures = false; // Exit loop if no image is taken
-        }
+      pickedImage = await picker5.pickImage(source: source);
+      if (pickedImage != null) {
+        // Compress the picked image
+        String compressedPath = await compressImage(pickedImage.path);
+        _multipleImage5.add(XFile(compressedPath));
+        _imagePaths5.add(compressedPath);
       }
+      update();
     }
 
-    update(); // Update the UI if necessary
-    return _imagePaths5.toString(); // Return the list of paths as a string
+    return _imagePaths5.toString();
   }
 
-  Future<String> takePhoto6(ImageSource source, {int imageQuality = 75}) async {
+
+  Future<String> takePhoto6(ImageSource source) async {
     final ImagePicker picker6 = ImagePicker();
+    List<XFile> selectedImages6 = [];
+    XFile? pickedImage;
 
     if (source == ImageSource.gallery) {
-      // Pick multiple images from the gallery
-      final List<XFile>? selectedImages6 =
-      await picker6.pickMultiImage(imageQuality: imageQuality);
-      if (selectedImages6 != null) {
-        for (XFile xfile in selectedImages6) {
-          final File file = File(xfile.path);
-          final processedFile = await processImage(file); // Process the image
-          if (processedFile != null) {
-            _multipleImage6.add(xfile);
-            _imagePaths6.add(processedFile.path); // Use processed image path
-            _imageFiles6.add(
-                processedFile); // Add the processed file to the list
-          }
-        }
+      selectedImages6 = await picker6.pickMultiImage();
+      for (var selectedImage6 in selectedImages6) {
+        // Compress each selected image
+        String compressedPath = await compressImage(selectedImage6.path);
+        _multipleImage6.add(XFile(compressedPath));
+        _imagePaths6.add(compressedPath);
       }
+      update();
     } else if (source == ImageSource.camera) {
-      // Let the user take multiple images from the camera
-      bool isTakingPictures = true;
-
-      while (isTakingPictures) {
-        final XFile? pickedImage =
-        await picker6.pickImage(source: source, imageQuality: imageQuality);
-        if (pickedImage != null) {
-          final File file = File(pickedImage.path);
-          final processedFile = await processImage(file); // Process the image
-          if (processedFile != null) {
-            _multipleImage6.add(pickedImage);
-            _imagePaths6.add(processedFile.path); // Use processed image path
-            _imageFiles6.add(
-                processedFile); // Add the processed file to the list
-          }
-
-          // Ask the user if they want to take another picture
-          // You may need a UI/dialog here to continue or break the loop
-          isTakingPictures = await askUserToContinueTakingPictures();
-        } else {
-          isTakingPictures = false; // Exit loop if no image is taken
-        }
+      pickedImage = await picker6.pickImage(source: source);
+      if (pickedImage != null) {
+        // Compress the picked image
+        String compressedPath = await compressImage(pickedImage.path);
+        _multipleImage6.add(XFile(compressedPath));
+        _imagePaths6.add(compressedPath);
       }
+      update();
     }
 
-    update(); // Update the UI if necessary
-    return _imagePaths6.toString(); // Return the list of paths as a string
+    return _imagePaths6.toString();
   }
 
-  Future<String> takePhoto7(ImageSource source, {int imageQuality = 75}) async {
+  Future<String> takePhoto7(ImageSource source) async {
     final ImagePicker picker7 = ImagePicker();
+    List<XFile> selectedImages7 = [];
+    XFile? pickedImage;
 
     if (source == ImageSource.gallery) {
-      // Pick multiple images from the gallery
-      final List<XFile>? selectedImages7 =
-      await picker7.pickMultiImage(imageQuality: imageQuality);
-      if (selectedImages7 != null) {
-        for (XFile xfile in selectedImages7) {
-          final File file = File(xfile.path);
-          final processedFile = await processImage(file); // Process the image
-          if (processedFile != null) {
-            _multipleImage7.add(xfile);
-            _imagePaths7.add(processedFile.path); // Use processed image path
-            _imageFiles7.add(
-                processedFile); // Add the processed file to the list
-          }
-        }
+      selectedImages7 = await picker7.pickMultiImage();
+      for (var selectedImage7 in selectedImages7) {
+        // Compress each selected image
+        String compressedPath = await compressImage(selectedImage7.path);
+        _multipleImage7.add(XFile(compressedPath));
+        _imagePaths7.add(compressedPath);
       }
+      update();
     } else if (source == ImageSource.camera) {
-      // Let the user take multiple images from the camera
-      bool isTakingPictures = true;
-
-      while (isTakingPictures) {
-        final XFile? pickedImage =
-        await picker7.pickImage(source: source, imageQuality: imageQuality);
-        if (pickedImage != null) {
-          final File file = File(pickedImage.path);
-          final processedFile = await processImage(file); // Process the image
-          if (processedFile != null) {
-            _multipleImage7.add(pickedImage);
-            _imagePaths7.add(processedFile.path); // Use processed image path
-            _imageFiles7.add(
-                processedFile); // Add the processed file to the list
-          }
-
-          // Ask the user if they want to take another picture
-          // You may need a UI/dialog here to continue or break the loop
-          isTakingPictures = await askUserToContinueTakingPictures();
-        } else {
-          isTakingPictures = false; // Exit loop if no image is taken
-        }
+      pickedImage = await picker7.pickImage(source: source);
+      if (pickedImage != null) {
+        // Compress the picked image
+        String compressedPath = await compressImage(pickedImage.path);
+        _multipleImage7.add(XFile(compressedPath));
+        _imagePaths7.add(compressedPath);
       }
+      update();
     }
 
-    update(); // Update the UI if necessary
-    return _imagePaths7.toString(); // Return the list of paths as a string
+    return _imagePaths7.toString();
   }
 
 
-  Future<String> takePhoto8(ImageSource source, {int imageQuality = 75}) async {
+  Future<String> takePhoto8(ImageSource source) async {
     final ImagePicker picker8 = ImagePicker();
+    List<XFile> selectedImages8 = [];
+    XFile? pickedImage;
 
     if (source == ImageSource.gallery) {
-      // Pick multiple images from the gallery
-      final List<XFile>? selectedImages8 =
-      await picker8.pickMultiImage(imageQuality: imageQuality);
-      if (selectedImages8 != null) {
-        for (XFile xfile in selectedImages8) {
-          final File file = File(xfile.path);
-          final processedFile = await processImage(file); // Process the image
-          if (processedFile != null) {
-            _multipleImage8.add(xfile);
-            _imagePaths8.add(processedFile.path); // Use processed image path
-            _imageFiles8.add(processedFile); // Add the processed file to the list
-          }
-        }
+      selectedImages8 = await picker8.pickMultiImage();
+      for (var selectedImage8 in selectedImages8) {
+        // Compress each selected image
+        String compressedPath = await compressImage(selectedImage8.path);
+        _multipleImage8.add(XFile(compressedPath));
+        _imagePaths8.add(compressedPath);
       }
+      update();
     } else if (source == ImageSource.camera) {
-      // Let the user take multiple images from the camera
-      bool isTakingPictures = true;
-
-      while (isTakingPictures) {
-        final XFile? pickedImage =
-        await picker8.pickImage(source: source, imageQuality: imageQuality);
-        if (pickedImage != null) {
-          final File file = File(pickedImage.path);
-          final processedFile = await processImage(file); // Process the image
-          if (processedFile != null) {
-            _multipleImage8.add(pickedImage);
-            _imagePaths8.add(processedFile.path); // Use processed image path
-            _imageFiles8.add(processedFile); // Add the processed file to the list
-          }
-
-          // Ask the user if they want to take another picture
-          // You may need a UI/dialog here to continue or break the loop
-          isTakingPictures = await askUserToContinueTakingPictures();
-        } else {
-          isTakingPictures = false; // Exit loop if no image is taken
-        }
+      pickedImage = await picker8.pickImage(source: source);
+      if (pickedImage != null) {
+        // Compress the picked image
+        String compressedPath = await compressImage(pickedImage.path);
+        _multipleImage8.add(XFile(compressedPath));
+        _imagePaths8.add(compressedPath);
       }
+      update();
     }
 
-    update(); // Update the UI if necessary
-    return _imagePaths8.toString(); // Return the list of paths as a string
+    return _imagePaths8.toString();
   }
 
 
-  Future<String> takePhoto9(ImageSource source, {int imageQuality = 75}) async {
+  Future<String> takePhoto9(ImageSource source) async {
     final ImagePicker picker9 = ImagePicker();
+    List<XFile> selectedImages9 = [];
+    XFile? pickedImage;
 
     if (source == ImageSource.gallery) {
-      // Pick multiple images from the gallery
-      final List<XFile>? selectedImages9 =
-      await picker9.pickMultiImage(imageQuality: imageQuality);
-      if (selectedImages9 != null) {
-        for (XFile xfile in selectedImages9) {
-          final File file = File(xfile.path);
-          final processedFile = await processImage(file); // Process the image
-          if (processedFile != null) {
-            _multipleImage9.add(xfile);
-            _imagePaths9.add(processedFile.path); // Use processed image path
-            _imageFiles9.add(processedFile); // Add the processed file to the list
-          }
-        }
+      selectedImages9 = await picker9.pickMultiImage();
+      for (var selectedImage9 in selectedImages9) {
+        // Compress each selected image
+        String compressedPath = await compressImage(selectedImage9.path);
+        _multipleImage9.add(XFile(compressedPath));
+        _imagePaths9.add(compressedPath);
       }
+      update();
     } else if (source == ImageSource.camera) {
-      // Let the user take multiple images from the camera
-      bool isTakingPictures = true;
-
-      while (isTakingPictures) {
-        final XFile? pickedImage =
-        await picker9.pickImage(source: source, imageQuality: imageQuality);
-        if (pickedImage != null) {
-          final File file = File(pickedImage.path);
-          final processedFile = await processImage(file); // Process the image
-          if (processedFile != null) {
-            _multipleImage9.add(pickedImage);
-            _imagePaths9.add(processedFile.path); // Use processed image path
-            _imageFiles9.add(processedFile); // Add the processed file to the list
-          }
-
-          // Ask the user if they want to take another picture
-          // You may need a UI/dialog here to continue or break the loop
-          isTakingPictures = await askUserToContinueTakingPictures();
-        } else {
-          isTakingPictures = false; // Exit loop if no image is taken
-        }
+      pickedImage = await picker9.pickImage(source: source);
+      if (pickedImage != null) {
+        // Compress the picked image
+        String compressedPath = await compressImage(pickedImage.path);
+        _multipleImage9.add(XFile(compressedPath));
+        _imagePaths9.add(compressedPath);
       }
+      update();
     }
 
-    update(); // Update the UI if necessary
-    return _imagePaths9.toString(); // Return the list of paths as a string
+    return _imagePaths9.toString();
   }
-
-
 
   setSchool(value)
   {

@@ -130,7 +130,6 @@ class _CabMeterTracingFormState extends State<CabMeterTracingForm> {
                               return null;
                             },
                           ),
-
                           CustomSizedBox(
                             value: 20,
                             side: 'height',
@@ -145,7 +144,7 @@ class _CabMeterTracingFormState extends State<CabMeterTracingForm> {
                           ),
                           CustomTextFormField(
                             textController:
-                                cabMeterController.VehicleNumberController,
+                            cabMeterController.VehicleNumberController,
                             labelText: 'Vehicle Number',
                             textCapitalization: TextCapitalization.characters, // This makes the keyboard capitalize all characters
 
@@ -155,7 +154,7 @@ class _CabMeterTracingFormState extends State<CabMeterTracingForm> {
                               }
                               // Regex pattern for validating Indian vehicle number plate
                               final regExp =
-                                  RegExp(r"^[a-zA-Z]{2}[a-zA-Z0-9]*[0-9]{4}$");
+                              RegExp(r"^[a-zA-Z]{2}[a-zA-Z0-9]*[0-9]{4}$");
                               if (!regExp.hasMatch(value)) {
                                 return 'Please Enter a valid Vehicle Number';
                               }
@@ -176,7 +175,7 @@ class _CabMeterTracingFormState extends State<CabMeterTracingForm> {
                           ),
                           CustomTextFormField(
                             textController:
-                                cabMeterController.driverNameController,
+                            cabMeterController.driverNameController,
                             textCapitalization: TextCapitalization.characters, // This makes the keyboard capitalize all characters
 
                             labelText: 'Driver Name',
@@ -200,18 +199,20 @@ class _CabMeterTracingFormState extends State<CabMeterTracingForm> {
                             side: 'height',
                           ),
                           CustomTextFormField(
-                            textController:
-                                cabMeterController.meterReadingController,
-                            textInputType:
-                            TextInputType.number,
+                            textController: cabMeterController.meterReadingController,
+                            textInputType: TextInputType.number,
                             labelText: 'Meter reading',
                             validator: (value) {
                               if (value!.isEmpty) {
                                 return 'Please Enter Meter Reading';
                               }
+                              if (double.tryParse(value) == 0) {
+                                return 'Meter Reading cannot be 0';
+                              }
                               return null;
                             },
                           ),
+
                           CustomSizedBox(
                             value: 20,
                             side: 'height',
@@ -463,6 +464,11 @@ class _CabMeterTracingFormState extends State<CabMeterTracingForm> {
 
                               if (_formKey.currentState!.validate() &&
                               !validateRegister && isRadioValid1) {
+                                List<File> cabImageFiles = [];
+                                for (var imagePath in cabMeterController.imagePaths) {
+                                  cabImageFiles.add(File(imagePath)); // Convert image path to File
+                                }
+
                                 // Generate a unique ID
                                 String generateUniqueId(int length) {
                                   const _chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -474,8 +480,8 @@ class _CabMeterTracingFormState extends State<CabMeterTracingForm> {
                                 String uniqueId = generateUniqueId(6);
                                 DateTime now = DateTime.now();
                                 String formattedDate = DateFormat('yyyy-MM-dd').format(now);
-                                String base64Images = await cabMeterController.convertImagesToBase64();
 
+                                String cabImageFilePaths = cabImageFiles.map((file) => file.path).join(',');
 
                                 // Create CabMeterTracingRecords object
                                 CabMeterTracingRecords enrolmentCollectionObj = CabMeterTracingRecords(
@@ -485,7 +491,7 @@ class _CabMeterTracingFormState extends State<CabMeterTracingForm> {
                                   vehicle_num: cabMeterController.VehicleNumberController.text,
                                   driver_name: cabMeterController.driverNameController.text,
                                   meter_reading: cabMeterController.meterReadingController.text,
-                                  image:  base64Images,
+                                  image:  cabImageFilePaths,
                                   user_id:widget.userid ?? '',
                                   office: widget.office ?? '',
                                   tour_id: cabMeterController.tourValue ?? '',
@@ -633,15 +639,38 @@ Future<void> saveDataToFile(CabMeterTracingRecords data) async {
       }
 
       final path = '${directory!.path}/cab_meter_form_${data.uniqueId}.txt';
+      print('Saving file to: $path'); // Debugging output
 
       // Convert the EnrolmentCollectionModel object to a JSON string
       String jsonString = jsonEncode(data);
 
-      // Write the JSON string to a file
-      File file = File(path);
-      await file.writeAsString(jsonString);
+      // Handle Base64 conversion for images
+      List<String> base64Images = [];
+      for (String imagePath in data.image!.split(',')) {
+        File imageFile = File(imagePath);
+        if (await imageFile.exists()) {
+          List<int> imageBytes = await imageFile.readAsBytes();
+          String base64Image = base64Encode(imageBytes);
+          base64Images.add(base64Image);
+        } else {
+          print('Image not found: $imagePath');
+        }
+      }
 
-      print('Data saved to $path');
+      // Update the enrolment data to include Base64 image strings
+      Map<String, dynamic> updatedData = jsonDecode(jsonString);
+      updatedData['image'] = base64Images; // Store Base64 instead of file paths
+
+      // Write the updated JSON string to a file
+      File file = File(path);
+      await file.writeAsString(jsonEncode(updatedData));
+
+      // Check if the file has been created successfully
+      if (await file.exists()) {
+        print('File successfully created at: ${file.path}');
+      } else {
+        print('File not found after writing.');
+      }
     } else {
       print('Storage permission not granted');
       // Optionally, handle what happens if permission is denied

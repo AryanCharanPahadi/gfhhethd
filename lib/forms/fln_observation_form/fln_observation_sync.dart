@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:http_parser/http_parser.dart'; // for MediaType
 import 'package:app17000ft_new/base_client/base_client.dart';
 import 'package:app17000ft_new/components/custom_appBar.dart';
@@ -38,9 +39,20 @@ class _FlnObservationSync extends State<FlnObservationSync> {
   @override
   Widget build(BuildContext context) {
     return WillPopScope(
-      onWillPop: () async {
-        bool shouldPop = await BaseClient().showLeaveConfirmationDialog(context);
-        return shouldPop;
+      onWillPop:  () async {
+        IconData icon = Icons.check_circle;
+        bool shouldExit = await showDialog(
+            context: context,
+            builder: (_) => Confirmation(
+                iconname: icon,
+                title: 'Confirm Exit',
+                yes: 'Exit',
+                no: 'Cancel',
+                desc: 'Are you sure you want to Exit?',
+                onPressed: () async {
+                  Navigator.of(context).pop(true);
+                }));
+        return shouldExit;
       },
       child: Scaffold(
         appBar: const CustomAppbar(title: 'FLN Observation Sync'),
@@ -84,10 +96,10 @@ class _FlnObservationSync extends State<FlnObservationSync> {
                       final item = flnObservationController.flnObservationList[index];
                       return ListTile(
                         title: Text(
-                          "${index + 1}. Tour ID: ${item.tourId!}\n    School: ${item.school!}",
+                          "${index + 1}. Tour ID: ${item.tourId!}\n    School: ${item.imgTLM!}",
                           style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
-                        trailing: IconButton(
+                        trailing:    IconButton(
                           color: AppColors.primary,
                           icon: const Icon(Icons.sync),
                           onPressed: () async {
@@ -127,7 +139,7 @@ class _FlnObservationSync extends State<FlnObservationSync> {
 
                                       // Call the insert function
                                       var rsp = await insertFlnObservation(
-                                       item.tourId,
+                                        item.tourId,
                                         item.school,
                                         item.udiseValue,
                                         item.correctUdise,
@@ -157,7 +169,8 @@ class _FlnObservationSync extends State<FlnObservationSync> {
                                         item.createdAt,
                                         item.submittedAt,
                                         item.id,
-                                            (progress) {
+
+                                        (progress) {
                                           syncProgress.value = progress; // Update sync progress
                                         },
                                       );
@@ -207,7 +220,6 @@ class _FlnObservationSync extends State<FlnObservationSync> {
 }
 
 var baseurl = "https://mis.17000ft.org/apis/fast_apis/insert_fln.php";
-
 Future<Map<String, dynamic>> insertFlnObservation(
     String? tourId,
     String? school,
@@ -220,7 +232,7 @@ Future<Map<String, dynamic>> insertFlnObservation(
     String? lessonPlanValue,
     String? activityValue,
     String? imgActivity,
-    String? imgTLM,
+    String? imgTLM,  // Ensure this is passed correctly
     String? baselineValue,
     String? baselineGradeReport,
     String? flnConductValue,
@@ -245,12 +257,12 @@ Future<Map<String, dynamic>> insertFlnObservation(
     print('Inserting Fln Observation Data');
     print('tourId: $tourId');
     print('school: $school');
-    // Add more debug prints as needed
   }
 
   var request = http.MultipartRequest('POST', Uri.parse(baseurl));
   request.headers["Accept"] = "Application/json";
 
+  // Add all text fields
   request.fields.addAll({
     'tourId': tourId ?? '',
     'school': school ?? '',
@@ -274,291 +286,50 @@ Future<Map<String, dynamic>> insertFlnObservation(
     'submittedAt': submittedAt ?? '',
   });
 
+  // Function to handle image uploads
+  Future<void> _attachImages(String? imagePaths, String fieldName) async {
+    if (imagePaths != null && imagePaths.isNotEmpty) {
+      List<String> images = imagePaths.split(',');
+      for (String path in images) {
+        print('Processing image for field $fieldName: $path'); // Debug log
 
+        File imageFile = File(path.trim());
+        if (imageFile.existsSync()) {
+          request.files.add(
+            await http.MultipartFile.fromPath(
+              '$fieldName[]', // Use array-like name for multiple images
+              imageFile.path,
+              contentType: MediaType('image', 'jpeg'),
+            ),
+          );
+          print("Image file $path attached successfully for $fieldName.");
+        } else {
+          print('Image file does not exist at the path: $path for $fieldName');
+          throw Exception("Image file not found at $path for $fieldName.");
+        }
+      }
+    } else {
+      print('No image file path provided for $fieldName');
+    }
+  }
+
+  // Attach all image files and handle missing ones
   try {
-    if (imgNurTimeTable != null && imgNurTimeTable.isNotEmpty) {
-      // Split the Base64-encoded images based on the separator (e.g., ',')
-      List<String> imageStrings = imgNurTimeTable.split(',');
-      int totalImages = imageStrings.length;
-      // Iterate through the list of Base64-encoded images and add each as a multipart file
-      for (int i = 0; i < imageStrings.length; i++) {
-        String imageString = imageStrings[i].trim(); // Clean up any extra spaces
+    await _attachImages(imgNurTimeTable, 'imgNurTimeTable');
+    await _attachImages(imgLKGTimeTable, 'imgLKGTimeTable');
+    await _attachImages(imgUKGTimeTable, 'imgUKGTimeTable');
+    await _attachImages(imgActivity, 'imgActivity');
+    await _attachImages(imgTLM, 'imgTLM'); // Ensure this is attached properly
+    await _attachImages(imgFLN, 'imgFLN');
+    await _attachImages(imgTraining, 'imgTraining');
+    await _attachImages(imgLib, 'imgLib');
+    await _attachImages(imgClass, 'imgClass');
+  } catch (e) {
+    return {"status": 0, "message": e.toString()};
+  }
 
-        // Convert each Base64 image to Uint8List
-        Uint8List imageBytes = base64Decode(imageString);
-
-        // Create MultipartFile from the image bytes
-        var multipartFile = http.MultipartFile.fromBytes(
-          'imgNurTimeTable[]', // Name of the field in the server request
-          imageBytes,
-          filename: 'imgNurTimeTable${id ?? ''}_$i.jpg', // Unique file name for each image
-          contentType: MediaType('image', 'jpeg'), // Specify the content type
-        );
-
-        // Add the image to the request
-        request.files.add(multipartFile);
-        updateProgress((i + 1) / totalImages); // Use the callback to update progress
-        print('Sync progress: ${(i + 1) / totalImages * 100}%');
-        // Debugging: Log each image upload
-        print('Adding image $i to the request, filename: enrolment_image_${id ?? ''}_$i.jpg');
-      }
-
-      // Debugging: Print the total number of images added
-      print('Total images added: ${request.files.length}');
-    }
-
-    if (imgLKGTimeTable != null && imgLKGTimeTable.isNotEmpty) {
-      // Split the Base64-encoded images based on the separator (e.g., ',')
-      List<String> imageStrings = imgLKGTimeTable.split(',');
-      int totalImages = imageStrings.length;
-      // Iterate through the list of Base64-encoded images and add each as a multipart file
-      for (int i = 0; i < imageStrings.length; i++) {
-        String imageString = imageStrings[i].trim(); // Clean up any extra spaces
-
-        // Convert each Base64 image to Uint8List
-        Uint8List imageBytes = base64Decode(imageString);
-
-        // Create MultipartFile from the image bytes
-        var multipartFile = http.MultipartFile.fromBytes(
-          'imgLKGTimeTable[]', // Name of the field in the server request
-          imageBytes,
-          filename: 'imgLKGTimeTable${id ?? ''}_$i.jpg', // Unique file name for each image
-          contentType: MediaType('image', 'jpeg'), // Specify the content type
-        );
-
-        // Add the image to the request
-        request.files.add(multipartFile);
-        updateProgress((i + 1) / totalImages); // Use the callback to update progress
-        print('Sync progress: ${(i + 1) / totalImages * 100}%');
-        // Debugging: Log each image upload
-        print('Adding image $i to the request, filename: enrolment_image_${id ?? ''}_$i.jpg');
-      }
-
-      // Debugging: Print the total number of images added
-      print('Total images added: ${request.files.length}');
-    }
-
-
-    if (imgUKGTimeTable != null && imgUKGTimeTable.isNotEmpty) {
-      // Split the Base64-encoded images based on the separator (e.g., ',')
-      List<String> imageStrings = imgUKGTimeTable.split(',');
-      int totalImages = imageStrings.length;
-      // Iterate through the list of Base64-encoded images and add each as a multipart file
-      for (int i = 0; i < imageStrings.length; i++) {
-        String imageString = imageStrings[i].trim(); // Clean up any extra spaces
-
-        // Convert each Base64 image to Uint8List
-        Uint8List imageBytes = base64Decode(imageString);
-
-        // Create MultipartFile from the image bytes
-        var multipartFile = http.MultipartFile.fromBytes(
-          'imgUKGTimeTable[]', // Name of the field in the server request
-          imageBytes,
-          filename: 'imgUKGTimeTable${id ?? ''}_$i.jpg', // Unique file name for each image
-          contentType: MediaType('image', 'jpeg'), // Specify the content type
-        );
-
-        // Add the image to the request
-        request.files.add(multipartFile);
-        updateProgress((i + 1) / totalImages); // Use the callback to update progress
-        print('Sync progress: ${(i + 1) / totalImages * 100}%');
-        // Debugging: Log each image upload
-        print('Adding image $i to the request, filename: enrolment_image_${id ?? ''}_$i.jpg');
-      }
-
-      // Debugging: Print the total number of images added
-      print('Total images added: ${request.files.length}');
-    }
-
-    if (imgActivity != null && imgActivity.isNotEmpty) {
-      // Split the Base64-encoded images based on the separator (e.g., ',')
-      List<String> imageStrings = imgActivity.split(',');
-      int totalImages = imageStrings.length;
-      // Iterate through the list of Base64-encoded images and add each as a multipart file
-      for (int i = 0; i < imageStrings.length; i++) {
-        String imageString = imageStrings[i].trim(); // Clean up any extra spaces
-
-        // Convert each Base64 image to Uint8List
-        Uint8List imageBytes = base64Decode(imageString);
-
-        // Create MultipartFile from the image bytes
-        var multipartFile = http.MultipartFile.fromBytes(
-          'imgActivity[]', // Name of the field in the server request
-          imageBytes,
-          filename: 'imgActivity${id ?? ''}_$i.jpg', // Unique file name for each image
-          contentType: MediaType('image', 'jpeg'), // Specify the content type
-        );
-
-        // Add the image to the request
-        request.files.add(multipartFile);
-        updateProgress((i + 1) / totalImages); // Use the callback to update progress
-        print('Sync progress: ${(i + 1) / totalImages * 100}%');
-        // Debugging: Log each image upload
-        print('Adding image $i to the request, filename: enrolment_image_${id ?? ''}_$i.jpg');
-      }
-
-      // Debugging: Print the total number of images added
-      print('Total images added: ${request.files.length}');
-    }
-
-    if (imgTLM != null && imgTLM.isNotEmpty) {
-      // Split the Base64-encoded images based on the separator (e.g., ',')
-      List<String> imageStrings = imgTLM.split(',');
-      int totalImages = imageStrings.length;
-      // Iterate through the list of Base64-encoded images and add each as a multipart file
-      for (int i = 0; i < imageStrings.length; i++) {
-        String imageString = imageStrings[i].trim(); // Clean up any extra spaces
-
-        // Convert each Base64 image to Uint8List
-        Uint8List imageBytes = base64Decode(imageString);
-
-        // Create MultipartFile from the image bytes
-        var multipartFile = http.MultipartFile.fromBytes(
-          'imgTLM[]', // Name of the field in the server request
-          imageBytes,
-          filename: 'imgTLM${id ?? ''}_$i.jpg', // Unique file name for each image
-          contentType: MediaType('image', 'jpeg'), // Specify the content type
-        );
-
-        // Add the image to the request
-        request.files.add(multipartFile);
-        updateProgress((i + 1) / totalImages); // Use the callback to update progress
-        print('Sync progress: ${(i + 1) / totalImages * 100}%');
-        // Debugging: Log each image upload
-        print('Adding image $i to the request, filename: enrolment_image_${id ?? ''}_$i.jpg');
-      }
-
-      // Debugging: Print the total number of images added
-      print('Total images added: ${request.files.length}');
-    }
-
-    if (imgFLN != null && imgFLN.isNotEmpty) {
-      // Split the Base64-encoded images based on the separator (e.g., ',')
-      List<String> imageStrings = imgFLN.split(',');
-      int totalImages = imageStrings.length;
-      // Iterate through the list of Base64-encoded images and add each as a multipart file
-      for (int i = 0; i < imageStrings.length; i++) {
-        String imageString = imageStrings[i].trim(); // Clean up any extra spaces
-
-        // Convert each Base64 image to Uint8List
-        Uint8List imageBytes = base64Decode(imageString);
-
-        // Create MultipartFile from the image bytes
-        var multipartFile = http.MultipartFile.fromBytes(
-          'imgFLN[]', // Name of the field in the server request
-          imageBytes,
-          filename: 'imgFLN${id ?? ''}_$i.jpg', // Unique file name for each image
-          contentType: MediaType('image', 'jpeg'), // Specify the content type
-        );
-
-        // Add the image to the request
-        request.files.add(multipartFile);
-        updateProgress((i + 1) / totalImages); // Use the callback to update progress
-        print('Sync progress: ${(i + 1) / totalImages * 100}%');
-        // Debugging: Log each image upload
-        print('Adding image $i to the request, filename: enrolment_image_${id ?? ''}_$i.jpg');
-      }
-
-      // Debugging: Print the total number of images added
-      print('Total images added: ${request.files.length}');
-    }
-
-
-    if (imgTraining != null && imgTraining.isNotEmpty) {
-      // Split the Base64-encoded images based on the separator (e.g., ',')
-      List<String> imageStrings = imgTraining.split(',');
-      int totalImages = imageStrings.length;
-      // Iterate through the list of Base64-encoded images and add each as a multipart file
-      for (int i = 0; i < imageStrings.length; i++) {
-        String imageString = imageStrings[i].trim(); // Clean up any extra spaces
-
-        // Convert each Base64 image to Uint8List
-        Uint8List imageBytes = base64Decode(imageString);
-
-        // Create MultipartFile from the image bytes
-        var multipartFile = http.MultipartFile.fromBytes(
-          'imgTraining[]', // Name of the field in the server request
-          imageBytes,
-          filename: 'imgTraining${id ?? ''}_$i.jpg', // Unique file name for each image
-          contentType: MediaType('image', 'jpeg'), // Specify the content type
-        );
-
-        // Add the image to the request
-        request.files.add(multipartFile);
-        updateProgress((i + 1) / totalImages); // Use the callback to update progress
-        print('Sync progress: ${(i + 1) / totalImages * 100}%');
-        // Debugging: Log each image upload
-        print('Adding image $i to the request, filename: enrolment_image_${id ?? ''}_$i.jpg');
-      }
-
-      // Debugging: Print the total number of images added
-      print('Total images added: ${request.files.length}');
-    }
-
-
-    if (imgLib != null && imgLib.isNotEmpty) {
-      // Split the Base64-encoded images based on the separator (e.g., ',')
-      List<String> imageStrings = imgLib.split(',');
-      int totalImages = imageStrings.length;
-      // Iterate through the list of Base64-encoded images and add each as a multipart file
-      for (int i = 0; i < imageStrings.length; i++) {
-        String imageString = imageStrings[i].trim(); // Clean up any extra spaces
-
-        // Convert each Base64 image to Uint8List
-        Uint8List imageBytes = base64Decode(imageString);
-
-        // Create MultipartFile from the image bytes
-        var multipartFile = http.MultipartFile.fromBytes(
-          'imgLib[]', // Name of the field in the server request
-          imageBytes,
-          filename: 'imgLib${id ?? ''}_$i.jpg', // Unique file name for each image
-          contentType: MediaType('image', 'jpeg'), // Specify the content type
-        );
-
-        // Add the image to the request
-        request.files.add(multipartFile);
-        updateProgress((i + 1) / totalImages); // Use the callback to update progress
-        print('Sync progress: ${(i + 1) / totalImages * 100}%');
-        // Debugging: Log each image upload
-        print('Adding image $i to the request, filename: enrolment_image_${id ?? ''}_$i.jpg');
-      }
-
-      // Debugging: Print the total number of images added
-      print('Total images added: ${request.files.length}');
-    }
-
-    if (imgClass != null && imgClass.isNotEmpty) {
-      // Split the Base64-encoded images based on the separator (e.g., ',')
-      List<String> imageStrings = imgClass.split(',');
-      int totalImages = imageStrings.length;
-      // Iterate through the list of Base64-encoded images and add each as a multipart file
-      for (int i = 0; i < imageStrings.length; i++) {
-        String imageString = imageStrings[i].trim(); // Clean up any extra spaces
-
-        // Convert each Base64 image to Uint8List
-        Uint8List imageBytes = base64Decode(imageString);
-
-        // Create MultipartFile from the image bytes
-        var multipartFile = http.MultipartFile.fromBytes(
-          'imgClass[]', // Name of the field in the server request
-          imageBytes,
-          filename: 'imgClass${id ?? ''}_$i.jpg', // Unique file name for each image
-          contentType: MediaType('image', 'jpeg'), // Specify the content type
-        );
-
-        // Add the image to the request
-        request.files.add(multipartFile);
-        updateProgress((i + 1) / totalImages); // Use the callback to update progress
-        print('Sync progress: ${(i + 1) / totalImages * 100}%');
-        // Debugging: Log each image upload
-
-        print('Adding image $i to the request, filename: enrolment_image_${id ?? ''}_$i.jpg');
-      }
-
-      // Debugging: Print the total number of images added
-      print('Total images added: ${request.files.length}');
-    }
-
+  // Sending the request
+  try {
     var response = await request.send();
     var responseBody = await response.stream.bytesToString();
 
@@ -567,23 +338,19 @@ Future<Map<String, dynamic>> insertFlnObservation(
         return {"status": 0, "message": "Empty response from server"};
       }
 
-      try {
-        var parsedResponse = json.decode(responseBody);
-        if (parsedResponse['status'] == 1) {
-          await SqfliteDatabaseHelper().queryDelete(arg: id.toString(), table: 'flnObservation', field: 'id');
-          await Get.find<FlnObservationController>().fetchData();
-          return parsedResponse;
-        } else {
-          return {"status": 0, "message": parsedResponse['message'] ?? 'Failed to insert data'};
-        }
-      } catch (e) {
-        return {"status": 0, "message": "Invalid response format"};
+      var parsedResponse = json.decode(responseBody);
+      if (parsedResponse['status'] == 1) {
+        await SqfliteDatabaseHelper().queryDelete(arg: id.toString(), table: 'flnObservation', field: 'id');
+        await Get.find<FlnObservationController>().fetchData();
+        return parsedResponse;
+      } else {
+        return {"status": 0, "message": parsedResponse['message'] ?? 'Failed to insert data'};
       }
     } else {
       print(responseBody);
-      return {"status": 0, "message": "Server returned an error $responseBody"};
+      return {"status": 0, "message": "Server returned an error: $responseBody"};
     }
   } catch (responseBody) {
-    return {"status": 0, "message": "Something went wrong, Please contact Admin $responseBody"};
+    return {"status": 0, "message": "Something went wrong, Please contact Admin: $responseBody"};
   }
 }

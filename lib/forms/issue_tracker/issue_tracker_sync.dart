@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:http_parser/http_parser.dart'; // for MediaType
 import 'package:app17000ft_new/components/custom_appBar.dart';
 import 'package:app17000ft_new/components/custom_dialog.dart';
@@ -747,18 +748,27 @@ Future insertIssueRecords(
 
   print('Stage 1: Text fields added to the request');
 
-  if (lib_issue_img != null && lib_issue_img.isNotEmpty) {
-    Uint8List imageBytes = base64Decode(lib_issue_img);
-    print('Decoded Image Length: ${imageBytes.length}');
+  if ( lib_issue_img!= null && lib_issue_img.isNotEmpty) {
+    List<String> imagePaths = lib_issue_img.split(',');
 
-    var multipartFile = http.MultipartFile.fromBytes(
-      'lib_issue_img[]',
-      imageBytes,
-      filename: 'lib_issue_img${id ?? ''}.jpg',
-      contentType: MediaType('image', 'jpeg'),
-    );
-    request.files.add(multipartFile);
-    print('Stage 2: Image file added to request');
+    for (String path in imagePaths) {
+      File imageFile = File(path.trim());
+      if (imageFile.existsSync()) {
+        request.files.add(
+          await http.MultipartFile.fromPath(
+            'lib_issue_img[]', // Use array-like name for multiple images
+            imageFile.path,
+            contentType: MediaType('image', 'jpeg'),
+          ),
+        );
+        print("Image file $path attached successfully.");
+      } else {
+        print('Image file does not exist at the path: $path');
+        return {"status": 0, "message": "Image file not found at $path."};
+      }
+    }
+  } else {
+    print('No image file path provided.');
   }
 
   try {
@@ -941,36 +951,28 @@ Future insertPlayRecords(
 
   print('Stage 1: Text fields added to the request');
 
-  if (play_issue_img != null && play_issue_img.isNotEmpty) {
-    // Split the Base64-encoded images based on the separator (e.g., ',')
-    List<String> imageStrings = play_issue_img.split(',');
+  if ( play_issue_img!= null && play_issue_img.isNotEmpty) {
+    List<String> imagePaths = play_issue_img.split(',');
 
-    // Iterate through the list of Base64-encoded images and add each as a multipart file
-    for (int i = 0; i < imageStrings.length; i++) {
-      String imageString = imageStrings[i].trim(); // Clean up any extra spaces
-
-      // Convert each Base64 image to Uint8List
-      Uint8List imageBytes = base64Decode(imageString);
-
-      // Create MultipartFile from the image bytes
-      var multipartFile = http.MultipartFile.fromBytes(
-        'play_issue_img[]', // Name of the field in the server request
-        imageBytes,
-        filename: 'play_issue_img${id ?? ''}_$i.jpg', // Unique file name for each image
-        contentType: MediaType('image', 'jpeg'), // Specify the content type
-      );
-
-      // Add the image to the request
-      request.files.add(multipartFile);
-
-      // Debugging: Log each image upload
-      print('Adding image $i to the request, filename: enrolment_image_${id ?? ''}_$i.jpg');
+    for (String path in imagePaths) {
+      File imageFile = File(path.trim());
+      if (imageFile.existsSync()) {
+        request.files.add(
+          await http.MultipartFile.fromPath(
+            'play_issue_img[]', // Use array-like name for multiple images
+            imageFile.path,
+            contentType: MediaType('image', 'jpeg'),
+          ),
+        );
+        print("Image file $path attached successfully.");
+      } else {
+        print('Image file does not exist at the path: $path');
+        return {"status": 0, "message": "Image file not found at $path."};
+      }
     }
-
-    // Debugging: Print the total number of images added
-    print('Total images added: ${request.files.length}');
+  } else {
+    print('No image file path provided.');
   }
-
 
   try {
     var response = await request.send();
@@ -1049,34 +1051,27 @@ Future insertFurnRecords(
 
   print('Stage 1: Text fields added to the request');
 
-  if (furn_issue_img != null && furn_issue_img.isNotEmpty) {
-    // Split the Base64-encoded images based on the separator (e.g., ',')
-    List<String> imageStrings = furn_issue_img.split(',');
+  if ( furn_issue_img!= null && furn_issue_img.isNotEmpty) {
+    List<String> imagePaths = furn_issue_img.split(',');
 
-    // Iterate through the list of Base64-encoded images and add each as a multipart file
-    for (int i = 0; i < imageStrings.length; i++) {
-      String imageString = imageStrings[i].trim(); // Clean up any extra spaces
-
-      // Convert each Base64 image to Uint8List
-      Uint8List imageBytes = base64Decode(imageString);
-
-      // Create MultipartFile from the image bytes
-      var multipartFile = http.MultipartFile.fromBytes(
-        'furn_issue_img[]', // Name of the field in the server request
-        imageBytes,
-        filename: 'furn_issue_img${id ?? ''}_$i.jpg', // Unique file name for each image
-        contentType: MediaType('image', 'jpeg'), // Specify the content type
-      );
-
-      // Add the image to the request
-      request.files.add(multipartFile);
-
-      // Debugging: Log each image upload
-      print('Adding image $i to the request, filename: enrolment_image_${id ?? ''}_$i.jpg');
+    for (String path in imagePaths) {
+      File imageFile = File(path.trim());
+      if (imageFile.existsSync()) {
+        request.files.add(
+          await http.MultipartFile.fromPath(
+            'furn_issue_img[]', // Use array-like name for multiple images
+            imageFile.path,
+            contentType: MediaType('image', 'jpeg'),
+          ),
+        );
+        print("Image file $path attached successfully.");
+      } else {
+        print('Image file does not exist at the path: $path');
+        return {"status": 0, "message": "Image file not found at $path."};
+      }
     }
-
-    // Debugging: Print the total number of images added
-    print('Total images added: ${request.files.length}');
+  } else {
+    print('No image file path provided.');
   }
 
 
@@ -1165,34 +1160,27 @@ Future insertDigRecords(
   print('Stage 1: Text fields added to the request');
 
   // Add image file if provided
-  if (dig_issue_img != null && dig_issue_img.isNotEmpty) {
-    // Split the Base64-encoded images based on the separator (e.g., ',')
-    List<String> imageStrings = dig_issue_img.split(',');
+  if ( dig_issue_img!= null && dig_issue_img.isNotEmpty) {
+    List<String> imagePaths = dig_issue_img.split(',');
 
-    // Iterate through the list of Base64-encoded images and add each as a multipart file
-    for (int i = 0; i < imageStrings.length; i++) {
-      String imageString = imageStrings[i].trim(); // Clean up any extra spaces
-
-      // Convert each Base64 image to Uint8List
-      Uint8List imageBytes = base64Decode(imageString);
-
-      // Create MultipartFile from the image bytes
-      var multipartFile = http.MultipartFile.fromBytes(
-        'dig_issue_img[]', // Name of the field in the server request
-        imageBytes,
-        filename: 'dig_issue_img${id ?? ''}_$i.jpg', // Unique file name for each image
-        contentType: MediaType('image', 'jpeg'), // Specify the content type
-      );
-
-      // Add the image to the request
-      request.files.add(multipartFile);
-
-      // Debugging: Log each image upload
-      print('Adding image $i to the request, filename: enrolment_image_${id ?? ''}_$i.jpg');
+    for (String path in imagePaths) {
+      File imageFile = File(path.trim());
+      if (imageFile.existsSync()) {
+        request.files.add(
+          await http.MultipartFile.fromPath(
+            'dig_issue_img[]', // Use array-like name for multiple images
+            imageFile.path,
+            contentType: MediaType('image', 'jpeg'),
+          ),
+        );
+        print("Image file $path attached successfully.");
+      } else {
+        print('Image file does not exist at the path: $path');
+        return {"status": 0, "message": "Image file not found at $path."};
+      }
     }
-
-    // Debugging: Print the total number of images added
-    print('Total images added: ${request.files.length}');
+  } else {
+    print('No image file path provided.');
   }
 
 
@@ -1312,34 +1300,27 @@ Future insertAlexaRecords(
 
   print('Stage 1: Text fields added to the request');
 
-  if (alexa_issue_img != null && alexa_issue_img.isNotEmpty) {
-    // Split the Base64-encoded images based on the separator (e.g., ',')
-    List<String> imageStrings = alexa_issue_img.split(',');
+  if ( alexa_issue_img!= null && alexa_issue_img.isNotEmpty) {
+    List<String> imagePaths = alexa_issue_img.split(',');
 
-    // Iterate through the list of Base64-encoded images and add each as a multipart file
-    for (int i = 0; i < imageStrings.length; i++) {
-      String imageString = imageStrings[i].trim(); // Clean up any extra spaces
-
-      // Convert each Base64 image to Uint8List
-      Uint8List imageBytes = base64Decode(imageString);
-
-      // Create MultipartFile from the image bytes
-      var multipartFile = http.MultipartFile.fromBytes(
-        'alexa_issue_img[]', // Name of the field in the server request
-        imageBytes,
-        filename: 'alexa_issue_img${id ?? ''}_$i.jpg', // Unique file name for each image
-        contentType: MediaType('image', 'jpeg'), // Specify the content type
-      );
-
-      // Add the image to the request
-      request.files.add(multipartFile);
-
-      // Debugging: Log each image upload
-      print('Adding image $i to the request, filename: enrolment_image_${id ?? ''}_$i.jpg');
+    for (String path in imagePaths) {
+      File imageFile = File(path.trim());
+      if (imageFile.existsSync()) {
+        request.files.add(
+          await http.MultipartFile.fromPath(
+            'alexa_issue_img[]', // Use array-like name for multiple images
+            imageFile.path,
+            contentType: MediaType('image', 'jpeg'),
+          ),
+        );
+        print("Image file $path attached successfully.");
+      } else {
+        print('Image file does not exist at the path: $path');
+        return {"status": 0, "message": "Image file not found at $path."};
+      }
     }
-
-    // Debugging: Print the total number of images added
-    print('Total images added: ${request.files.length}');
+  } else {
+    print('No image file path provided.');
   }
 
   try {

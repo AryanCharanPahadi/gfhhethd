@@ -60,7 +60,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       child: Text(
                         'Login',
                         style:
-                            AppStyles.heading1(context, AppColors.onBackground),
+                        AppStyles.heading1(context, AppColors.onBackground),
                       ),
                     ),
                   ),
@@ -68,7 +68,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     key: _loginFormkey,
                     child: Padding(
                       padding:
-                          const EdgeInsets.only(left: 40, right: 40, top: 40),
+                      const EdgeInsets.only(left: 40, right: 40, top: 40),
                       child: Column(
                         children: [
                           SizedBox(
@@ -76,7 +76,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 small: 60.0, medium: 70.0, large: 80.0),
                             child: CustomTextFormField(
                               textController:
-                                  loginController.usernameController,
+                              loginController.usernameController,
                               textInputType: TextInputType.text,
                               prefixIcon: Icons.phone,
                               hintText: 'Username',
@@ -99,7 +99,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 small: 60.0, medium: 70.0, large: 80.0),
                             child: CustomTextFormField(
                               textController:
-                                  loginController.passwordController,
+                              loginController.passwordController,
                               validator: (value) {
                                 if (value!.isEmpty) {
                                   return 'Please enter your password';

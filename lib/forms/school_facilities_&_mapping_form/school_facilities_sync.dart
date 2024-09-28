@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:http_parser/http_parser.dart'; // for MediaType
 import 'package:app17000ft_new/base_client/base_client.dart';
 import 'package:app17000ft_new/components/custom_appBar.dart';
@@ -40,9 +41,20 @@ class _SchoolFacilitiesSyncState extends State<SchoolFacilitiesSync> {
   @override
   Widget build(BuildContext context) {
     return WillPopScope(
-      onWillPop: () async {
-        bool shouldPop = await BaseClient().showLeaveConfirmationDialog(context);
-        return shouldPop;
+      onWillPop:  () async {
+        IconData icon = Icons.check_circle;
+        bool shouldExit = await showDialog(
+            context: context,
+            builder: (_) => Confirmation(
+                iconname: icon,
+                title: 'Confirm Exit',
+                yes: 'Exit',
+                no: 'Cancel',
+                desc: 'Are you sure you want to Exit?',
+                onPressed: () async {
+                  Navigator.of(context).pop(true);
+                }));
+        return shouldExit;
       },
       child: Scaffold(
         appBar: const CustomAppbar(title: 'School Facilities & Mapping Form'),
@@ -94,131 +106,138 @@ class _SchoolFacilitiesSyncState extends State<SchoolFacilitiesSync> {
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            IconButton(
-                              color: AppColors.primary,
-                              icon: const Icon(Icons.edit),
-                              onPressed: () async {
-                                final existingRecord = schoolFacilitiesController.schoolFacilitiesList[index];
-                                print('Navigating to Enrollment');
-                                print('Existing Record: $existingRecord');
-
-                                IconData icon = Icons.edit;
-                                bool? shouldNavigate = await showDialog<bool>(
-                                  context: context,
-                                  builder: (_) => Confirmation(
-                                    iconname: icon,
-                                    title: 'Confirm Update',
-                                    yes: 'Confirm',
-                                    no: 'Cancel',
-                                    desc: 'Are you sure you want to Update this record?',
-                                    onPressed: () {
-                                      Navigator.of(context).pop(true);
-                                    },
-                                  ),
-                                );
-
-                                if (shouldNavigate == true) {
-                                  await Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => SchoolFacilitiesForm(
-                                        userid: 'userid',
-                                        existingRecord: existingRecord,
-                                      ),
-                                    ),
-                                  );
-                                  print('Navigation completed');
-                                } else {
-                                  print('Navigation canceled');
-                                }
-                              },
-                            ),
+                            // IconButton(
+                            //   color: AppColors.primary,
+                            //   icon: const Icon(Icons.edit),
+                            //   onPressed: () async {
+                            //     final existingRecord = schoolFacilitiesController.schoolFacilitiesList[index];
+                            //     print('Navigating to Enrollment');
+                            //     print('Existing Record: $existingRecord');
+                            //
+                            //     IconData icon = Icons.edit;
+                            //     bool? shouldNavigate = await showDialog<bool>(
+                            //       context: context,
+                            //       builder: (_) => Confirmation(
+                            //         iconname: icon,
+                            //         title: 'Confirm Update',
+                            //         yes: 'Confirm',
+                            //         no: 'Cancel',
+                            //         desc: 'Are you sure you want to Update this record?',
+                            //         onPressed: () {
+                            //           Navigator.of(context).pop(true);
+                            //         },
+                            //       ),
+                            //     );
+                            //
+                            //     if (shouldNavigate == true) {
+                            //       await Navigator.push(
+                            //         context,
+                            //         MaterialPageRoute(
+                            //           builder: (context) => SchoolFacilitiesForm(
+                            //             userid: 'userid',
+                            //             existingRecord: existingRecord,
+                            //           ),
+                            //         ),
+                            //       );
+                            //       print('Navigation completed');
+                            //     } else {
+                            //       print('Navigation canceled');
+                            //     }
+                            //   },
+                            // ),
                             IconButton(
                               color: AppColors.primary,
                               icon: const Icon(Icons.sync),
                               onPressed: () async {
-                                IconData icon = Icons.check_circle;
-                                showDialog(
-                                  context: context,
-                                  builder: (_) => Confirmation(
-                                    iconname: icon,
-                                    title: 'Confirm',
-                                    yes: 'Confirm',
-                                    no: 'Cancel',
-                                    desc: 'Are you sure you want to Sync?',
-                                    onPressed: () async {
-                                      // Set loading to true when sync begins
-                                      isLoading.value = true;
-                                      hasError.value = false;
+                                // Check if the user is offline
+                                if (_networkManager.connectionType.value == 0) {
+                                  customSnackbar(
+                                    'Warning',
+                                    'You are offline, please connect to the internet',
+                                    AppColors.secondary,
+                                    AppColors.onSecondary,
+                                    Icons.warning,
+                                  );
+                                } else {
+                                  // Proceed if the user is online
+                                  IconData icon = Icons.check_circle;
+                                  showDialog(
+                                    context: context,
+                                    builder: (_) => Confirmation(
+                                      iconname: icon,
+                                      title: 'Confirm',
+                                      yes: 'Confirm',
+                                      no: 'Cancel',
+                                      desc: 'Are you sure you want to Sync?',
+                                      onPressed: () async {
+                                        setState(() {
+                                          isLoading.value = true; // Show loading spinner
+                                          syncProgress.value = 0.0; // Reset progress
+                                          hasError.value = false; // Reset error state
+                                        });
 
-                                      if (_networkManager.connectionType.value == 0) {
-                                        customSnackbar(
-                                          'Warning',
-                                          'You are offline please connect to the internet',
-                                          AppColors.secondary,
-                                          AppColors.onSecondary,
-                                          Icons.warning,
-                                        );
-                                      } else if (_networkManager.connectionType.value == 1 ||
-                                          _networkManager.connectionType.value == 2) {
-                                        // Simulating sync progress
-                                        for (int i = 0; i <= 100; i++) {
-                                          await Future.delayed(const Duration(milliseconds: 50));
-                                          syncProgress.value = i / 100;
-                                        }
+                                        if (_networkManager.connectionType.value == 1 ||
+                                            _networkManager.connectionType.value == 2) {
+                                          for (int i = 0; i <= 100; i++) {
+                                            await Future.delayed(const Duration(milliseconds: 50));
+                                            syncProgress.value = i / 100; // Update progress
+                                          }
 
-                                        var rsp = await insertSchoolFacilities(
-                                          item.tourId,
-                                          item.school,
-                                          item.udiseCode,
-                                          item.correctUdise,
-                                          item.playImg,
-                                          item.residentialValue,
-                                          item.electricityValue,
-                                          item.internetValue,
-                                          item.projectorValue,
-                                          item.smartClassValue,
-                                          item.numFunctionalClass,
-                                          item.playgroundValue,
-                                          item.playImg,
-                                          item.libValue,
-                                          item.libLocation,
-                                          item.librarianName,
-                                          item.librarianTraining,
-                                          item.libRegisterValue,
-                                          item.created_by,
-                                          item.created_at,
-                                          item.id,
-                                              (progress) {
-                                            syncProgress.value = progress;
-                                          },
-                                        );
+                                          // Call the insert function
+                                          var rsp = await insertSchoolFacilities(
+                                            item.tourId,
+                                            item.school,
+                                            item.udiseCode,
+                                            item.correctUdise,
+                                            item.playImg,
+                                            item.residentialValue,
+                                            item.electricityValue,
+                                            item.internetValue,
+                                            item.projectorValue,
+                                            item.smartClassValue,
+                                            item.numFunctionalClass,
+                                            item.playgroundValue,
+                                            item.playImg,
+                                            item.libValue,
+                                            item.libLocation,
+                                            item.librarianName,
+                                            item.librarianTraining,
+                                            item.libRegisterValue,
+                                            item.created_by,
+                                            item.created_at,
+                                            item.id,
 
-                                        if (rsp['status'] == 1) {
-                                          customSnackbar(
-                                            'Successfully',
-                                            "${rsp['message']}",
-                                            AppColors.secondary,
-                                            AppColors.onSecondary,
-                                            Icons.check,
+                                            (progress) {
+                                              syncProgress.value = progress; // Update sync progress
+                                            },
                                           );
-                                        } else {
-                                          hasError.value = true;
-                                          customSnackbar(
-                                            "Error",
-                                            "${rsp['message']}",
-                                            AppColors.error,
-                                            AppColors.onError,
-                                            Icons.warning,
-                                          );
-                                        }
 
-                                        // Set loading to false after sync completes
-                                        isLoading.value = false;
-                                      }
-                                    },
-                                  ),
-                                );
+                                          if (rsp['status'] == 1) {
+                                            customSnackbar(
+                                              'Successfully',
+                                              "${rsp['message']}",
+                                              AppColors.secondary,
+                                              AppColors.onSecondary,
+                                              Icons.check,
+                                            );
+                                          } else {
+                                            hasError.value = true; // Set error state if sync fails
+                                            customSnackbar(
+                                              "Error",
+                                              "${rsp['message']}",
+                                              AppColors.error,
+                                              AppColors.onError,
+                                              Icons.warning,
+                                            );
+                                          }
+                                          setState(() {
+                                            isLoading.value = false; // Hide loading spinner
+                                          });
+                                        }
+                                      },
+                                    ),
+                                  );
+                                }
                               },
                             ),
                           ],
@@ -333,67 +352,52 @@ Future insertSchoolFacilities(
 
 
   try {
-    if (playImg != null && playImg.isNotEmpty) {
-      // Split the Base64-encoded images based on the separator (e.g., ',')
-      List<String> imageStrings = playImg.split(',');
-      int totalImages = imageStrings.length;
-      // Iterate through the list of Base64-encoded images and add each as a multipart file
-      for (int i = 0; i < imageStrings.length; i++) {
-        String imageString = imageStrings[i].trim(); // Clean up any extra spaces
+    if ( playImg!= null && playImg.isNotEmpty) {
+      List<String> imagePaths = playImg.split(',');
 
-        // Convert each Base64 image to Uint8List
-        Uint8List imageBytes = base64Decode(imageString);
-
-        // Create MultipartFile from the image bytes
-        var multipartFile = http.MultipartFile.fromBytes(
-          'playImg[]', // Name of the field in the server request
-          imageBytes,
-          filename: 'playImg${id ?? ''}_$i.jpg', // Unique file name for each image
-          contentType: MediaType('image', 'jpeg'), // Specify the content type
-        );
-
-        // Add the image to the request
-        request.files.add(multipartFile);
-        updateProgress((i + 1) / totalImages); // Use the callback to update progress
-        print('Sync progress: ${(i + 1) / totalImages * 100}%');
-        // Debugging: Log each image upload
-        print('Adding image $i to the request, filename: enrolment_image_${id ?? ''}_$i.jpg');
+      for (String path in imagePaths) {
+        File imageFile = File(path.trim());
+        if (imageFile.existsSync()) {
+          request.files.add(
+            await http.MultipartFile.fromPath(
+              'playImg[]', // Use array-like name for multiple images
+              imageFile.path,
+              contentType: MediaType('image', 'jpeg'),
+            ),
+          );
+          print("Image file $path attached successfully.");
+        } else {
+          print('Image file does not exist at the path: $path');
+          return {"status": 0, "message": "Image file not found at $path."};
+        }
       }
-
-      // Debugging: Print the total number of images added
-      print('Total images added: ${request.files.length}');
+    } else {
+      print('No image file path provided.');
     }
 
-    if (imgRegister != null && imgRegister.isNotEmpty) {
-      // Split the Base64-encoded images based on the separator (e.g., ',')
-      List<String> imageStrings = imgRegister.split(',');
-      int totalImages = imageStrings.length;
-      // Iterate through the list of Base64-encoded images and add each as a multipart file
-      for (int i = 0; i < imageStrings.length; i++) {
-        String imageString = imageStrings[i].trim(); // Clean up any extra spaces
+    if ( imgRegister!= null && imgRegister.isNotEmpty) {
+      List<String> imagePaths = imgRegister.split(',');
 
-        // Convert each Base64 image to Uint8List
-        Uint8List imageBytes = base64Decode(imageString);
-
-        // Create MultipartFile from the image bytes
-        var multipartFile = http.MultipartFile.fromBytes(
-          'imgRegister[]', // Name of the field in the server request
-          imageBytes,
-          filename: 'imgRegister${id ?? ''}_$i.jpg', // Unique file name for each image
-          contentType: MediaType('image', 'jpeg'), // Specify the content type
-        );
-
-        // Add the image to the request
-        request.files.add(multipartFile);
-        updateProgress((i + 1) / totalImages); // Use the callback to update progress
-        print('Sync progress: ${(i + 1) / totalImages * 100}%');
-        // Debugging: Log each image upload
-        print('Adding image $i to the request, filename: enrolment_image_${id ?? ''}_$i.jpg');
+      for (String path in imagePaths) {
+        File imageFile = File(path.trim());
+        if (imageFile.existsSync()) {
+          request.files.add(
+            await http.MultipartFile.fromPath(
+              'imgRegister[]', // Use array-like name for multiple images
+              imageFile.path,
+              contentType: MediaType('image', 'jpeg'),
+            ),
+          );
+          print("Image file $path attached successfully.");
+        } else {
+          print('Image file does not exist at the path: $path');
+          return {"status": 0, "message": "Image file not found at $path."};
+        }
       }
-
-      // Debugging: Print the total number of images added
-      print('Total images added: ${request.files.length}');
+    } else {
+      print('No image file path provided.');
     }
+
 
     // Send the request to the server
     var response = await request.send();

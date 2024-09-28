@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:http_parser/http_parser.dart'; // for MediaType
 import 'package:app17000ft_new/base_client/base_client.dart';
 import 'package:app17000ft_new/components/custom_appBar.dart';
@@ -100,105 +101,118 @@ class _InPersonQuantitativeSync extends State<InPersonQuantitativeSync> {
                               color: AppColors.primary,
                               icon: const Icon(Icons.sync),
                               onPressed: () async {
-                                IconData icon = Icons.check_circle;
-                                showDialog(
+                                // Check if the user is offline
+                                if (_networkManager.connectionType.value == 0) {
+                                  customSnackbar(
+                                    'Warning',
+                                    'You are offline, please connect to the internet',
+                                    AppColors.secondary,
+                                    AppColors.onSecondary,
+                                    Icons.warning,
+                                  );
+                                } else {
+                                  // Proceed if the user is online
+                                  IconData icon = Icons.check_circle;
+                                  showDialog(
                                     context: context,
                                     builder: (_) => Confirmation(
-                                        iconname: icon,
-                                        title: 'Confirm',
-                                        yes: 'Confirm',
-                                        no: 'Cancel',
-                                        desc: 'Are you sure you want to Sync?',
-                                        onPressed: () async {
-                                          setState(() {
-                                            isLoading.value = true; // Show loading spinner
-                                            syncProgress.value = 0.0; // Reset progress
-                                            hasError.value = false; // Reset error state
-                                          });
-                                          if (_networkManager.connectionType.value == 0) {
-                                            customSnackbar(
-                                                'Warning',
-                                                'You are offline please connect to the internet',
-                                                AppColors.secondary,
-                                                AppColors.onSecondary,
-                                                Icons.warning);
-                                          } else {
-                                            if (_networkManager.connectionType.value == 1 ||
-                                                _networkManager.connectionType.value == 2) {
-                                              for (int i = 0; i <= 100; i++) {
-                                                await Future.delayed(const Duration(milliseconds: 50));
-                                                syncProgress.value = i / 100; // Update progress
-                                              }
-                                              var rsp = await insertInPersonQuantitativeRecords(
-                                                  item.tourId,
-                                                  item.school,
-                                                  item.udicevalue,
-                                                  item.correct_udice,
-                                                  item.no_enrolled,
-                                                  item.imgpath,
-                                                  item.timetable_available,
-                                                  item.class_scheduled,
+                                      iconname: icon,
+                                      title: 'Confirm',
+                                      yes: 'Confirm',
+                                      no: 'Cancel',
+                                      desc: 'Are you sure you want to Sync?',
+                                      onPressed: () async {
+                                        setState(() {
+                                          isLoading.value = true; // Show loading spinner
+                                          syncProgress.value = 0.0; // Reset progress
+                                          hasError.value = false; // Reset error state
+                                        });
 
-                                                  item.remarks_scheduling,
-                                                  item.admin_appointed,
-                                                  item.admin_trained,
-                                                  item.admin_name,
-                                                  item.admin_phone,
-                                                  item.sub_teacher_trained,
-                                                  item.teacher_ids,
-
-                                                  item.no_staff,
-                                                  item.training_pic,
-                                                  item.specifyOtherTopics,
-                                                  item.practical_demo,
-                                                  item.reason_demo,
-                                                  item.comments_capacity,
-                                                  item.children_comfortable,
-                                                  item.children_understand,
-                                                  item.post_test,
-                                                  item.resolved_doubts,
-                                                  item.logs_filled,
-                                                  item.filled_correctly,
-                                                  item.send_report,
-                                                  item.app_installed,
-                                                  item.data_synced,
-                                                  item.last_syncedDate,
-                                                  item.lib_timetable,
-                                                  item.timetable_followed,
-                                                  item.registered_updated,
-                                                  item.observation_comment,
-                                                  item.topicsCoveredInTraining,
-                                                  item.participant_name,
-                                                  item.major_issue,
-                                                  item.created_at,
-                                                  item.submitted_by,
-                                                  item.unique_id,
-                                                  item.id,
-                                                    (progress) {
-                                              syncProgress.value = progress; // Update sync progress
-                                              },);
-                                              if (rsp['status'] == 1) {
-                                                customSnackbar(
-                                                    'Successfully',
-                                                    "${rsp['message']}",
-                                                    AppColors.secondary,
-                                                    AppColors.onSecondary,
-                                                    Icons.check);
-                                              } else {
-                                                hasError.value = true; // Set error state if sync fails
-                                                customSnackbar(
-                                                    "Error",
-                                                    "${rsp['message']}",
-                                                    AppColors.error,
-                                                    AppColors.onError,
-                                                    Icons.warning);
-                                              }
-                                              setState(() {
-                                                isLoading.value = false; // Hide loading spinner
-                                              });
-                                            }
+                                        if (_networkManager.connectionType.value == 1 ||
+                                            _networkManager.connectionType.value == 2) {
+                                          for (int i = 0; i <= 100; i++) {
+                                            await Future.delayed(const Duration(milliseconds: 50));
+                                            syncProgress.value = i / 100; // Update progress
                                           }
-                                        }));
+
+                                          // Call the insert function
+                                          var rsp = await insertInPersonQuantitativeRecords(
+                                            item.tourId,
+                                            item.school,
+                                            item.udicevalue,
+                                            item.correct_udice,
+                                            item.no_enrolled,
+                                            item.imgpath,
+                                            item.timetable_available,
+                                            item.class_scheduled,
+
+                                            item.remarks_scheduling,
+                                            item.admin_appointed,
+                                            item.admin_trained,
+                                            item.admin_name,
+                                            item.admin_phone,
+                                            item.sub_teacher_trained,
+                                            item.teacher_ids,
+
+                                            item.no_staff,
+                                            item.training_pic,
+                                            item.specifyOtherTopics,
+                                            item.practical_demo,
+                                            item.reason_demo,
+                                            item.comments_capacity,
+                                            item.children_comfortable,
+                                            item.children_understand,
+                                            item.post_test,
+                                            item.resolved_doubts,
+                                            item.logs_filled,
+                                            item.filled_correctly,
+                                            item.send_report,
+                                            item.app_installed,
+                                            item.data_synced,
+                                            item.last_syncedDate,
+                                            item.lib_timetable,
+                                            item.timetable_followed,
+                                            item.registered_updated,
+                                            item.observation_comment,
+                                            item.topicsCoveredInTraining,
+                                            item.participant_name,
+                                            item.major_issue,
+                                            item.created_at,
+                                            item.submitted_by,
+                                            item.unique_id,
+                                            item.id,
+
+                                            (progress) {
+                                              syncProgress.value = progress; // Update sync progress
+                                            },
+                                          );
+
+                                          if (rsp['status'] == 1) {
+                                            customSnackbar(
+                                              'Successfully',
+                                              "${rsp['message']}",
+                                              AppColors.secondary,
+                                              AppColors.onSecondary,
+                                              Icons.check,
+                                            );
+                                          } else {
+                                            hasError.value = true; // Set error state if sync fails
+                                            customSnackbar(
+                                              "Error",
+                                              "${rsp['message']}",
+                                              AppColors.error,
+                                              AppColors.onError,
+                                              Icons.warning,
+                                            );
+                                          }
+                                          setState(() {
+                                            isLoading.value = false; // Hide loading spinner
+                                          });
+                                        }
+                                      },
+                                    ),
+                                  );
+                                }
                               },
                             ),
                           ],
@@ -366,68 +380,52 @@ Future insertInPersonQuantitativeRecords(
   });
 
   // Convert Base64 back to file and add it to the request for imgpath
-  if (imgpath != null && imgpath.isNotEmpty) {
-    // Split the Base64-encoded images based on the separator (e.g., ',')
-    List<String> imageStrings = imgpath.split(',');
-    int totalImages = imageStrings.length;
-    // Iterate through the list of Base64-encoded images and add each as a multipart file
-    for (int i = 0; i < imageStrings.length; i++) {
-      String imageString = imageStrings[i].trim(); // Clean up any extra spaces
+  if ( imgpath!= null && imgpath.isNotEmpty) {
+    List<String> imagePaths = imgpath.split(',');
 
-      // Convert each Base64 image to Uint8List
-      Uint8List imageBytes = base64Decode(imageString);
-
-      // Create MultipartFile from the image bytes
-      var multipartFile = http.MultipartFile.fromBytes(
-        'imgpath[]', // Name of the field in the server request
-        imageBytes,
-        filename: 'imgpath${id ?? ''}_$i.jpg', // Unique file name for each image
-        contentType: MediaType('image', 'jpeg'), // Specify the content type
-      );
-
-      // Add the image to the request
-      request.files.add(multipartFile);
-      updateProgress((i + 1) / totalImages); // Use the callback to update progress
-      print('Sync progress: ${(i + 1) / totalImages * 100}%');
-      // Debugging: Log each image upload
-      print('Adding image $i to the request, filename: enrolment_image_${id ?? ''}_$i.jpg');
+    for (String path in imagePaths) {
+      File imageFile = File(path.trim());
+      if (imageFile.existsSync()) {
+        request.files.add(
+          await http.MultipartFile.fromPath(
+            'imgpath[]', // Use array-like name for multiple images
+            imageFile.path,
+            contentType: MediaType('image', 'jpeg'),
+          ),
+        );
+        print("Image file $path attached successfully.");
+      } else {
+        print('Image file does not exist at the path: $path');
+        return {"status": 0, "message": "Image file not found at $path."};
+      }
     }
-
-    // Debugging: Print the total number of images added
-    print('Total images added: ${request.files.length}');
+  } else {
+    print('No image file path provided.');
   }
 
 // Convert Base64 back to file and add it to the request for training_pic
   // Convert Base64 back to file and add it to the request for imgpath
-  if (training_pic != null && training_pic.isNotEmpty) {
-    // Split the Base64-encoded images based on the separator (e.g., ',')
-    List<String> imageStrings = training_pic.split(',');
-    int totalImages = imageStrings.length;
-    // Iterate through the list of Base64-encoded images and add each as a multipart file
-    for (int i = 0; i < imageStrings.length; i++) {
-      String imageString = imageStrings[i].trim(); // Clean up any extra spaces
+  if ( training_pic!= null && training_pic.isNotEmpty) {
+    List<String> imagePaths = training_pic.split(',');
 
-      // Convert each Base64 image to Uint8List
-      Uint8List imageBytes = base64Decode(imageString);
-
-      // Create MultipartFile from the image bytes
-      var multipartFile = http.MultipartFile.fromBytes(
-        'training_pic[]', // Name of the field in the server request
-        imageBytes,
-        filename: 'training_pic${id ?? ''}_$i.jpg', // Unique file name for each image
-        contentType: MediaType('image', 'jpeg'), // Specify the content type
-      );
-
-      // Add the image to the request
-      request.files.add(multipartFile);
-      updateProgress((i + 1) / totalImages); // Use the callback to update progress
-      print('Sync progress: ${(i + 1) / totalImages * 100}%');
-      // Debugging: Log each image upload
-      print('Adding image $i to the request, filename: enrolment_image_${id ?? ''}_$i.jpg');
+    for (String path in imagePaths) {
+      File imageFile = File(path.trim());
+      if (imageFile.existsSync()) {
+        request.files.add(
+          await http.MultipartFile.fromPath(
+            'training_pic[]', // Use array-like name for multiple images
+            imageFile.path,
+            contentType: MediaType('image', 'jpeg'),
+          ),
+        );
+        print("Image file $path attached successfully.");
+      } else {
+        print('Image file does not exist at the path: $path');
+        return {"status": 0, "message": "Image file not found at $path."};
+      }
     }
-
-    // Debugging: Print the total number of images added
-    print('Total images added: ${request.files.length}');
+  } else {
+    print('No image file path provided.');
   }
 
   try {
@@ -451,11 +449,11 @@ Future insertInPersonQuantitativeRecords(
     }
 
     return parsedResponse;
-  } catch (error) {
-    print("Error: $error");
+  } catch (responseBody) {
+    print("Error: $responseBody");
     return {
       "status": 0,
-      "message": "Something went wrong, Please contact Admin $error"
+      "message": "Something went wrong, Please contact Admin $responseBody"
     };
   }
 }

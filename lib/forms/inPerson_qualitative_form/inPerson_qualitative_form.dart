@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/services.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 import 'package:path_provider/path_provider.dart';
@@ -27,6 +28,7 @@ import 'package:app17000ft_new/components/custom_sizedBox.dart';
 
 import 'package:app17000ft_new/home/home_screen.dart';
 
+import '../../components/custom_confirmation.dart';
 import '../../helper/database_helper.dart';
 import 'inPerson_qualitative_controller.dart';
 import 'inPerson_qualitative_modal.dart';
@@ -60,15 +62,24 @@ class _InPersonQualitativeFormState extends State<InPersonQualitativeForm> {
   bool _isImageUploadedSchoolBoard = false;
   bool validateSchoolBoard = false;
 
-
   @override
   Widget build(BuildContext context) {
     final responsive = Responsive(context);
     return WillPopScope(
         onWillPop: () async {
-          bool shouldPop =
-              await BaseClient().showLeaveConfirmationDialog(context);
-          return shouldPop;
+          IconData icon = Icons.check_circle;
+          bool shouldExit = await showDialog(
+              context: context,
+              builder: (_) => Confirmation(
+                  iconname: icon,
+                  title: 'Exit Confirmation',
+                  yes: 'Yes',
+                  no: 'no',
+                  desc: 'Are you sure you want to leave this screen?',
+                  onPressed: () async {
+                    Navigator.of(context).pop(true);
+                  }));
+          return shouldExit;
         },
         child: Scaffold(
             appBar: const CustomAppbar(
@@ -203,6 +214,12 @@ class _InPersonQualitativeFormState extends State<InPersonQualitativeForm> {
                                                     inpersonQualitativeController
                                                         .setRadioValue(
                                                             'udiCode', value);
+                                                    if (value == 'Yes') {
+
+                                                      inpersonQualitativeController.correctUdiseCodeController.clear();
+
+
+                                                    }
                                                   },
                                                 ),
                                                 const Text('Yes'),
@@ -272,6 +289,12 @@ class _InPersonQualitativeFormState extends State<InPersonQualitativeForm> {
                                                       .correctUdiseCodeController,
                                               textInputType:
                                                   TextInputType.number,
+                                              inputFormatters: [
+                                                LengthLimitingTextInputFormatter(
+                                                    13),
+                                                FilteringTextInputFormatter
+                                                    .digitsOnly,
+                                              ],
                                               labelText:
                                                   'Enter correct UDISE code',
                                               validator: (value) {
@@ -305,41 +328,41 @@ class _InPersonQualitativeFormState extends State<InPersonQualitativeForm> {
                                             height: 60,
                                             decoration: BoxDecoration(
                                               borderRadius:
-                                              BorderRadius.circular(10.0),
+                                                  BorderRadius.circular(10.0),
                                               border: Border.all(
                                                   width: 2,
                                                   color:
-                                                  _isImageUploadedSchoolBoard ==
-                                                      false
-                                                      ? AppColors.primary
-                                                      : AppColors.error),
+                                                      _isImageUploadedSchoolBoard ==
+                                                              false
+                                                          ? AppColors.primary
+                                                          : AppColors.error),
                                             ),
                                             child: ListTile(
                                                 title:
-                                                _isImageUploadedSchoolBoard ==
-                                                    false
-                                                    ? const Text(
-                                                  'Click or Upload Image',
-                                                )
-                                                    : const Text(
-                                                  'Click or Upload Image',
-                                                  style: TextStyle(
-                                                      color: AppColors
-                                                          .error),
-                                                ),
+                                                    _isImageUploadedSchoolBoard ==
+                                                            false
+                                                        ? const Text(
+                                                            'Click or Upload Image',
+                                                          )
+                                                        : const Text(
+                                                            'Click or Upload Image',
+                                                            style: TextStyle(
+                                                                color: AppColors
+                                                                    .error),
+                                                          ),
                                                 trailing: const Icon(
                                                     Icons.camera_alt,
                                                     color:
-                                                    AppColors.onBackground),
+                                                        AppColors.onBackground),
                                                 onTap: () {
                                                   showModalBottomSheet(
                                                       backgroundColor:
-                                                      AppColors.primary,
+                                                          AppColors.primary,
                                                       context: context,
                                                       builder: ((builder) =>
                                                           inpersonQualitativeController
                                                               .bottomSheet(
-                                                              context)));
+                                                                  context)));
                                                 }),
                                           ),
                                           ErrorText(
@@ -352,93 +375,93 @@ class _InPersonQualitativeFormState extends State<InPersonQualitativeForm> {
                                           ),
 
                                           inpersonQualitativeController
-                                              .multipleImage.isNotEmpty
+                                                  .multipleImage.isNotEmpty
                                               ? Container(
-                                            width: responsive
-                                                .responsiveValue(
-                                                small: 600.0,
-                                                medium: 900.0,
-                                                large: 1400.0),
-                                            height: responsive
-                                                .responsiveValue(
-                                                small: 170.0,
-                                                medium: 170.0,
-                                                large: 170.0),
-                                            decoration: BoxDecoration(
-                                              border: Border.all(
-                                                  color: Colors.grey),
-                                              borderRadius:
-                                              BorderRadius.circular(
-                                                  10),
-                                            ),
-                                            child:
-                                            inpersonQualitativeController
-                                                .multipleImage
-                                                .isEmpty
-                                                ? const Center(
-                                              child: Text(
-                                                  'No images selected.'),
-                                            )
-                                                : ListView.builder(
-                                              scrollDirection:
-                                              Axis.horizontal,
-                                              itemCount:
-                                              inpersonQualitativeController
-                                                  .multipleImage
-                                                  .length,
-                                              itemBuilder:
-                                                  (context,
-                                                  index) {
-                                                return SizedBox(
-                                                  height: 200,
-                                                  width: 200,
-                                                  child: Column(
-                                                    children: [
-                                                      Padding(
-                                                        padding: const EdgeInsets
-                                                            .all(
-                                                            8.0),
-                                                        child:
-                                                        GestureDetector(
-                                                          onTap:
-                                                              () {
-                                                            CustomImagePreview.showImagePreview(inpersonQualitativeController.multipleImage[index].path,
-                                                                context);
-                                                          },
-                                                          child:
-                                                          Image.file(
-                                                            File(inpersonQualitativeController.multipleImage[index].path),
-                                                            width:
-                                                            190,
-                                                            height:
-                                                            120,
-                                                            fit:
-                                                            BoxFit.fill,
-                                                          ),
-                                                        ),
-                                                      ),
-                                                      GestureDetector(
-                                                        onTap:
-                                                            () {
-                                                          setState(
-                                                                  () {
-                                                                    inpersonQualitativeController.multipleImage.removeAt(index);
-                                                              });
-                                                        },
-                                                        child:
-                                                        const Icon(
-                                                          Icons
-                                                              .delete,
-                                                          color:
-                                                          Colors.red,
-                                                        ),
-                                                      ),
-                                                    ],
+                                                  width: responsive
+                                                      .responsiveValue(
+                                                          small: 600.0,
+                                                          medium: 900.0,
+                                                          large: 1400.0),
+                                                  height: responsive
+                                                      .responsiveValue(
+                                                          small: 170.0,
+                                                          medium: 170.0,
+                                                          large: 170.0),
+                                                  decoration: BoxDecoration(
+                                                    border: Border.all(
+                                                        color: Colors.grey),
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            10),
                                                   ),
-                                                );
-                                              },
-                                            ),
-                                          )
+                                                  child:
+                                                      inpersonQualitativeController
+                                                              .multipleImage
+                                                              .isEmpty
+                                                          ? const Center(
+                                                              child: Text(
+                                                                  'No images selected.'),
+                                                            )
+                                                          : ListView.builder(
+                                                              scrollDirection:
+                                                                  Axis.horizontal,
+                                                              itemCount:
+                                                                  inpersonQualitativeController
+                                                                      .multipleImage
+                                                                      .length,
+                                                              itemBuilder:
+                                                                  (context,
+                                                                      index) {
+                                                                return SizedBox(
+                                                                  height: 200,
+                                                                  width: 200,
+                                                                  child: Column(
+                                                                    children: [
+                                                                      Padding(
+                                                                        padding: const EdgeInsets
+                                                                            .all(
+                                                                            8.0),
+                                                                        child:
+                                                                            GestureDetector(
+                                                                          onTap:
+                                                                              () {
+                                                                            CustomImagePreview.showImagePreview(inpersonQualitativeController.multipleImage[index].path,
+                                                                                context);
+                                                                          },
+                                                                          child:
+                                                                              Image.file(
+                                                                            File(inpersonQualitativeController.multipleImage[index].path),
+                                                                            width:
+                                                                                190,
+                                                                            height:
+                                                                                120,
+                                                                            fit:
+                                                                                BoxFit.fill,
+                                                                          ),
+                                                                        ),
+                                                                      ),
+                                                                      GestureDetector(
+                                                                        onTap:
+                                                                            () {
+                                                                          setState(
+                                                                              () {
+                                                                            inpersonQualitativeController.multipleImage.removeAt(index);
+                                                                          });
+                                                                        },
+                                                                        child:
+                                                                            const Icon(
+                                                                          Icons
+                                                                              .delete,
+                                                                          color:
+                                                                              Colors.red,
+                                                                        ),
+                                                                      ),
+                                                                    ],
+                                                                  ),
+                                                                );
+                                                              },
+                                                            ),
+                                                )
                                               : const SizedBox(),
                                           CustomSizedBox(
                                             value: 20,
@@ -702,8 +725,7 @@ class _InPersonQualitativeFormState extends State<InPersonQualitativeForm> {
 
                                               if (_formKey.currentState!
                                                       .validate() &&
-                                                  !validateSchoolBoard
-                                                       && // Ensure that at least one image is uploaded
+                                                  !validateSchoolBoard && // Ensure that at least one image is uploaded
                                                   isRadioValid1 &&
                                                   isRadioValid2 &&
                                                   isRadioValid3 &&
@@ -759,6 +781,11 @@ class _InPersonQualitativeFormState extends State<InPersonQualitativeForm> {
                                                         .setRadioValue(
                                                             'HmIncharge',
                                                             value);
+                                                    if (value == 'Yes') {
+
+                                                      inpersonQualitativeController.notAbleController.clear();
+
+                                                    }
                                                   },
                                                 ),
                                                 const Text('Yes'),
@@ -786,6 +813,23 @@ class _InPersonQualitativeFormState extends State<InPersonQualitativeForm> {
                                                         .setRadioValue(
                                                             'HmIncharge',
                                                             value);
+                                                    if (value == 'No') {
+
+                                                      inpersonQualitativeController.schoolRoutineController.clear();
+                                                      inpersonQualitativeController.componentsController.clear();
+                                                      inpersonQualitativeController.programInitiatedController.clear();
+                                                      inpersonQualitativeController.digiLabSessionController.clear();
+                                                      inpersonQualitativeController.alexaEchoController.clear();
+                                                      inpersonQualitativeController.servicesController.clear();
+                                                      inpersonQualitativeController.suggestionsController.clear();
+                                                      inpersonQualitativeController.allowingTabletsController.clear();
+                                                      inpersonQualitativeController.alexaSessionsController.clear();
+                                                      inpersonQualitativeController.playgroundAllowedController.clear();
+                                                      inpersonQualitativeController.improveProgramController.clear();
+
+
+                                                    }
+
                                                   },
                                                 ),
                                                 const Text('No'),
@@ -815,6 +859,12 @@ class _InPersonQualitativeFormState extends State<InPersonQualitativeForm> {
                                                   .getSelectedValue(
                                                       'HmIncharge') ==
                                               'Yes') ...[
+
+                                      if (inpersonQualitativeController
+                                          .getSelectedValue(
+                                      'schoolDigiLab') ==
+                                      'Yes') ...[
+
                                             LabelText(
                                               label:
                                                   '1. What challenges does the school face in integrating the DigiLab sessions with the normal school routine?',
@@ -829,6 +879,7 @@ class _InPersonQualitativeFormState extends State<InPersonQualitativeForm> {
                                                   inpersonQualitativeController
                                                       .schoolRoutineController,
                                               labelText: 'Write here...',
+                                              maxlines: 2,
                                               validator: (value) {
                                                 if (value == null ||
                                                     value.isEmpty) {
@@ -845,6 +896,7 @@ class _InPersonQualitativeFormState extends State<InPersonQualitativeForm> {
                                               value: 20,
                                               side: 'height',
                                             ),
+                                            ],
                                             LabelText(
                                               label:
                                                   '2. What difficulties do teachers and students face in effectively using the program components? ',
@@ -859,6 +911,7 @@ class _InPersonQualitativeFormState extends State<InPersonQualitativeForm> {
                                                   inpersonQualitativeController
                                                       .componentsController,
                                               labelText: 'Write here...',
+                                              maxlines: 2,
                                               validator: (value) {
                                                 if (value == null ||
                                                     value.isEmpty) {
@@ -889,6 +942,7 @@ class _InPersonQualitativeFormState extends State<InPersonQualitativeForm> {
                                                   inpersonQualitativeController
                                                       .programInitiatedController,
                                               labelText: 'Write here...',
+                                              maxlines: 2,
                                               validator: (value) {
                                                 if (value == null ||
                                                     value.isEmpty) {
@@ -905,6 +959,10 @@ class _InPersonQualitativeFormState extends State<InPersonQualitativeForm> {
                                               value: 20,
                                               side: 'height',
                                             ),
+                                      if (inpersonQualitativeController
+                                          .getSelectedValue(
+                                      'schoolDigiLab') ==
+                                      'Yes') ...[
                                             LabelText(
                                               label:
                                                   '4. Have any steps been taken to encourage DigiLab sessions and its activities? ',
@@ -918,6 +976,7 @@ class _InPersonQualitativeFormState extends State<InPersonQualitativeForm> {
                                               textController:
                                                   inpersonQualitativeController
                                                       .digiLabSessionController,
+                                              maxlines: 2,
                                               labelText: 'Write here...',
                                               validator: (value) {
                                                 if (value == null ||
@@ -935,6 +994,7 @@ class _InPersonQualitativeFormState extends State<InPersonQualitativeForm> {
                                               value: 20,
                                               side: 'height',
                                             ),
+                                            ],
                                             LabelText(
                                               label:
                                                   '5. Has there been any improvement n learning levels (DigiLab), reading levels (Library) or communication skills (Alexa Echo)? ',
@@ -948,6 +1008,7 @@ class _InPersonQualitativeFormState extends State<InPersonQualitativeForm> {
                                               textController:
                                                   inpersonQualitativeController
                                                       .alexaEchoController,
+                                              maxlines: 2,
                                               labelText: 'Write here...',
                                               validator: (value) {
                                                 if (value == null ||
@@ -979,6 +1040,7 @@ class _InPersonQualitativeFormState extends State<InPersonQualitativeForm> {
                                                   inpersonQualitativeController
                                                       .servicesController,
                                               labelText: 'Write here...',
+                                              maxlines: 2,
                                               validator: (value) {
                                                 if (value == null ||
                                                     value.isEmpty) {
@@ -1008,6 +1070,7 @@ class _InPersonQualitativeFormState extends State<InPersonQualitativeForm> {
                                               textController:
                                                   inpersonQualitativeController
                                                       .suggestionsController,
+                                              maxlines: 2,
                                               labelText: 'Write here...',
                                               validator: (value) {
                                                 if (value == null ||
@@ -1025,6 +1088,10 @@ class _InPersonQualitativeFormState extends State<InPersonQualitativeForm> {
                                               value: 20,
                                               side: 'height',
                                             ),
+                                      if (inpersonQualitativeController
+                                          .getSelectedValue(
+                                      'schoolDigiLab') ==
+                                      'Yes') ...[
                                             LabelText(
                                               label:
                                                   '7. Are you open to allowing students to take DigiLab tablets home with them for "at home learning"? If no,why not?',
@@ -1038,6 +1105,7 @@ class _InPersonQualitativeFormState extends State<InPersonQualitativeForm> {
                                               textController:
                                                   inpersonQualitativeController
                                                       .allowingTabletsController,
+                                              maxlines: 2,
                                               labelText: 'Write here...',
                                               validator: (value) {
                                                 if (value == null ||
@@ -1055,6 +1123,7 @@ class _InPersonQualitativeFormState extends State<InPersonQualitativeForm> {
                                               value: 20,
                                               side: 'height',
                                             ),
+                                            ],
                                             LabelText(
                                               label:
                                                   '8. How often are children allowed to play in the playground? Is there any schedule/timetable for this?',
@@ -1068,6 +1137,7 @@ class _InPersonQualitativeFormState extends State<InPersonQualitativeForm> {
                                               textController:
                                                   inpersonQualitativeController
                                                       .playgroundAllowedController,
+                                              maxlines: 2,
                                               labelText: 'Write here...',
                                               validator: (value) {
                                                 if (value == null ||
@@ -1098,6 +1168,7 @@ class _InPersonQualitativeFormState extends State<InPersonQualitativeForm> {
                                               textController:
                                                   inpersonQualitativeController
                                                       .alexaSessionsController,
+                                              maxlines: 2,
                                               labelText: 'Write here...',
                                               validator: (value) {
                                                 if (value == null ||
@@ -1128,6 +1199,7 @@ class _InPersonQualitativeFormState extends State<InPersonQualitativeForm> {
                                               textController:
                                                   inpersonQualitativeController
                                                       .improveProgramController,
+                                              maxlines: 2,
                                               labelText: 'Write here...',
                                               validator: (value) {
                                                 if (value == null ||
@@ -1255,6 +1327,11 @@ class _InPersonQualitativeFormState extends State<InPersonQualitativeForm> {
                                                         .setRadioValue(
                                                             'schoolTeacherInterview',
                                                             value);
+                                                    if (value == 'Yes') {
+
+                                                      inpersonQualitativeController.notAbleTeacherInterviewController.clear();
+
+                                                    }
                                                   },
                                                 ),
                                                 const Text('Yes'),
@@ -1282,6 +1359,21 @@ class _InPersonQualitativeFormState extends State<InPersonQualitativeForm> {
                                                         .setRadioValue(
                                                             'schoolTeacherInterview',
                                                             value);
+                                                    if (value == 'No') {
+
+                                                      inpersonQualitativeController.operatingDigiLabController.clear();
+                                                      inpersonQualitativeController.difficultiesController.clear();
+                                                      inpersonQualitativeController.improvementController.clear();
+                                                      inpersonQualitativeController.studentLearningController.clear();
+                                                      inpersonQualitativeController.negativeImpactController.clear();
+                                                      inpersonQualitativeController.clearRadioValue('digiLabTeachers');
+                                                      inpersonQualitativeController.teacherFeelsLessController.clear();
+                                                      inpersonQualitativeController.clearRadioValue('logsDifficulties');
+                                                      inpersonQualitativeController.factorsPreventingController.clear();
+                                                      inpersonQualitativeController.clearRadioValue('additionalSubjects');
+                                                      inpersonQualitativeController.additionalSubjectsController.clear();
+                                                      inpersonQualitativeController.feedbackController.clear();
+                                                    }
                                                   },
                                                 ),
                                                 const Text('No'),
@@ -1324,6 +1416,7 @@ class _InPersonQualitativeFormState extends State<InPersonQualitativeForm> {
                                               textController:
                                                   inpersonQualitativeController
                                                       .operatingDigiLabController,
+                                              maxlines: 2,
                                               labelText: 'Write here...',
                                               validator: (value) {
                                                 if (value == null ||
@@ -1354,6 +1447,7 @@ class _InPersonQualitativeFormState extends State<InPersonQualitativeForm> {
                                               textController:
                                                   inpersonQualitativeController
                                                       .difficultiesController,
+                                              maxlines: 2,
                                               labelText: 'Write here...',
                                               validator: (value) {
                                                 if (value == null ||
@@ -1384,6 +1478,7 @@ class _InPersonQualitativeFormState extends State<InPersonQualitativeForm> {
                                               textController:
                                                   inpersonQualitativeController
                                                       .improvementController,
+                                              maxlines: 2,
                                               labelText: 'Write here...',
                                               validator: (value) {
                                                 if (value == null ||
@@ -1414,6 +1509,7 @@ class _InPersonQualitativeFormState extends State<InPersonQualitativeForm> {
                                               textController:
                                                   inpersonQualitativeController
                                                       .studentLearningController,
+                                              maxlines: 2,
                                               labelText: 'Write here...',
                                               validator: (value) {
                                                 if (value == null ||
@@ -1444,6 +1540,7 @@ class _InPersonQualitativeFormState extends State<InPersonQualitativeForm> {
                                               textController:
                                                   inpersonQualitativeController
                                                       .negativeImpactController,
+                                              maxlines: 2,
                                               labelText: 'Write here...',
                                               validator: (value) {
                                                 if (value == null ||
@@ -1513,7 +1610,13 @@ class _InPersonQualitativeFormState extends State<InPersonQualitativeForm> {
                                                           .setRadioValue(
                                                               'digiLabTeachers',
                                                               value);
+                                                      if (value == 'No') {
+
+                                                        inpersonQualitativeController.teacherFeelsLessController.clear();
+
+                                                      }
                                                     },
+
                                                   ),
                                                   const Text('No'),
                                                 ],
@@ -1556,6 +1659,7 @@ class _InPersonQualitativeFormState extends State<InPersonQualitativeForm> {
                                                 textController:
                                                     inpersonQualitativeController
                                                         .teacherFeelsLessController,
+                                                maxlines: 2,
                                                 labelText: 'Write here...',
                                                 validator: (value) {
                                                   if (value == null ||
@@ -1626,6 +1730,11 @@ class _InPersonQualitativeFormState extends State<InPersonQualitativeForm> {
                                                           .setRadioValue(
                                                               'logsDifficulties',
                                                               value);
+                                                      if (value == 'No') {
+
+                                                        inpersonQualitativeController.factorsPreventingController.clear();
+
+                                                      }
                                                     },
                                                   ),
                                                   const Text('No'),
@@ -1669,6 +1778,7 @@ class _InPersonQualitativeFormState extends State<InPersonQualitativeForm> {
                                                 textController:
                                                     inpersonQualitativeController
                                                         .factorsPreventingController,
+                                                maxlines: 2,
                                                 labelText: 'Write here...',
                                                 validator: (value) {
                                                   if (value == null ||
@@ -1739,6 +1849,11 @@ class _InPersonQualitativeFormState extends State<InPersonQualitativeForm> {
                                                           .setRadioValue(
                                                               'additionalSubjects',
                                                               value);
+                                                      if (value == 'No') {
+
+                                                        inpersonQualitativeController.additionalSubjectsController.clear();
+
+                                                      }
                                                     },
                                                   ),
                                                   const Text('No'),
@@ -1782,6 +1897,7 @@ class _InPersonQualitativeFormState extends State<InPersonQualitativeForm> {
                                                 textController:
                                                     inpersonQualitativeController
                                                         .additionalSubjectsController,
+                                                maxlines: 2,
                                                 labelText: 'Write here...',
                                                 validator: (value) {
                                                   if (value == null ||
@@ -1813,6 +1929,7 @@ class _InPersonQualitativeFormState extends State<InPersonQualitativeForm> {
                                               textController:
                                                   inpersonQualitativeController
                                                       .feedbackController,
+                                              maxlines: 2,
                                               labelText: 'Write here...',
                                               validator: (value) {
                                                 if (value == null ||
@@ -1848,6 +1965,7 @@ class _InPersonQualitativeFormState extends State<InPersonQualitativeForm> {
                                               textController:
                                                   inpersonQualitativeController
                                                       .notAbleTeacherInterviewController,
+                                              maxlines: 2,
                                               labelText: 'Write here...',
                                               validator: (value) {
                                                 if (value == null ||
@@ -1983,6 +2101,13 @@ class _InPersonQualitativeFormState extends State<InPersonQualitativeForm> {
                                                         .setRadioValue(
                                                             'studentInterview',
                                                             value);
+
+                                                    if (value == 'Yes') {
+
+                                                      inpersonQualitativeController.interviewStudentsNotController.clear();
+
+
+                                                    }
                                                   },
                                                 ),
                                                 const Text('Yes'),
@@ -2010,6 +2135,26 @@ class _InPersonQualitativeFormState extends State<InPersonQualitativeForm> {
                                                         .setRadioValue(
                                                             'studentInterview',
                                                             value);
+                                                    if (value == 'No') {
+
+                                                      inpersonQualitativeController.navigatingDigiLabController.clear();
+                                                      inpersonQualitativeController.componentsDigiLabController.clear();
+                                                      inpersonQualitativeController.timeDigiLabController.clear();
+                                                      inpersonQualitativeController.booksReadingController.clear();
+                                                      inpersonQualitativeController.LibraryController.clear();
+                                                      inpersonQualitativeController.LibraryController.clear();
+                                                      inpersonQualitativeController.questionsAlexaController.clear();
+                                                      inpersonQualitativeController.additionalTypeController.clear();
+                                                      inpersonQualitativeController.questionsAlexaNotAbleController.clear();
+                                                      inpersonQualitativeController.playingplaygroundController.clear();
+                                                      inpersonQualitativeController.clearRadioValue('continuousAssistance');
+                                                      inpersonQualitativeController.clearRadioValue('enoughtime');
+                                                      inpersonQualitativeController.clearRadioValue('favoriteRead');
+                                                      inpersonQualitativeController.clearRadioValue('regularlyMotivate');
+                                                      inpersonQualitativeController.clearRadioValue('answersQuestions');
+                                                      inpersonQualitativeController.clearRadioValue('AlexaEcho');
+
+                                                    }
                                                   },
                                                 ),
                                                 const Text('No'),
@@ -2039,6 +2184,12 @@ class _InPersonQualitativeFormState extends State<InPersonQualitativeForm> {
                                                   .getSelectedValue(
                                                       'studentInterview') ==
                                               'Yes') ...[
+
+                                      if (inpersonQualitativeController
+                                          .getSelectedValue(
+                                      'schoolDigiLab') ==
+                                      'Yes') ...[
+
                                             LabelText(
                                               label:
                                                   '1. What challenges do you face in navigating through the DigiLab content?',
@@ -2052,6 +2203,7 @@ class _InPersonQualitativeFormState extends State<InPersonQualitativeForm> {
                                               textController:
                                                   inpersonQualitativeController
                                                       .navigatingDigiLabController,
+                                              maxlines: 2,
                                               labelText: 'Write here...',
                                               validator: (value) {
                                                 if (value == null ||
@@ -2160,6 +2312,7 @@ class _InPersonQualitativeFormState extends State<InPersonQualitativeForm> {
                                               textController:
                                                   inpersonQualitativeController
                                                       .componentsDigiLabController,
+                                              maxlines: 2,
                                               labelText: 'Write here...',
                                               validator: (value) {
                                                 if (value == null ||
@@ -2190,6 +2343,7 @@ class _InPersonQualitativeFormState extends State<InPersonQualitativeForm> {
                                               textController:
                                                   inpersonQualitativeController
                                                       .timeDigiLabController,
+                                              maxlines: 2,
                                               labelText: 'Write here...',
                                               validator: (value) {
                                                 if (value == null ||
@@ -2285,6 +2439,11 @@ class _InPersonQualitativeFormState extends State<InPersonQualitativeForm> {
                                               value: 20,
                                               side: 'height',
                                             ),
+                                            ],
+                                      if (inpersonQualitativeController
+                                          .getSelectedValue(
+                                      'schoolLibrary') ==
+                                      'Yes') ...[
                                             LabelText(
                                               label:
                                                   '6. Which type of books do you enjoy reading the most in the Library?',
@@ -2298,6 +2457,7 @@ class _InPersonQualitativeFormState extends State<InPersonQualitativeForm> {
                                               textController:
                                                   inpersonQualitativeController
                                                       .booksReadingController,
+                                              maxlines: 2,
                                               labelText: 'Write here...',
                                               validator: (value) {
                                                 if (value == null ||
@@ -2328,6 +2488,7 @@ class _InPersonQualitativeFormState extends State<InPersonQualitativeForm> {
                                               textController:
                                                   inpersonQualitativeController
                                                       .LibraryController,
+                                              maxlines: 2,
                                               labelText: 'Write here...',
                                               validator: (value) {
                                                 if (value == null ||
@@ -2423,6 +2584,12 @@ class _InPersonQualitativeFormState extends State<InPersonQualitativeForm> {
                                               value: 20,
                                               side: 'height',
                                             ),
+                                            ],
+
+                                      if (inpersonQualitativeController
+                                          .getSelectedValue(
+                                      'schoolPlayground') ==
+                                      'Yes') ...[
                                             LabelText(
                                               label:
                                                   '9. How much time do you spend daily playing in the playground?',
@@ -2436,6 +2603,7 @@ class _InPersonQualitativeFormState extends State<InPersonQualitativeForm> {
                                               textController:
                                                   inpersonQualitativeController
                                                       .playingplaygroundController,
+                                              maxlines: 2,
                                               labelText: 'Write here...',
                                               validator: (value) {
                                                 if (value == null ||
@@ -2531,6 +2699,8 @@ class _InPersonQualitativeFormState extends State<InPersonQualitativeForm> {
                                               value: 20,
                                               side: 'height',
                                             ),
+                                            ],
+
                                             LabelText(
                                               label:
                                                   '11. Has this school been provided with Alexa Echo Dot device?',
@@ -2626,6 +2796,7 @@ class _InPersonQualitativeFormState extends State<InPersonQualitativeForm> {
                                                 textController:
                                                     inpersonQualitativeController
                                                         .questionsAlexaController,
+                                                maxlines: 2,
                                                 labelText: 'Write here...',
                                                 validator: (value) {
                                                   if (value == null ||
@@ -2738,6 +2909,7 @@ class _InPersonQualitativeFormState extends State<InPersonQualitativeForm> {
                                                   textController:
                                                       inpersonQualitativeController
                                                           .questionsAlexaNotAbleController,
+                                                  maxlines: 2,
                                                   labelText: 'Write here...',
                                                   validator: (value) {
                                                     if (value == null ||
@@ -2770,6 +2942,7 @@ class _InPersonQualitativeFormState extends State<InPersonQualitativeForm> {
                                               textController:
                                                   inpersonQualitativeController
                                                       .additionalTypeController,
+                                              maxlines: 2,
                                               labelText: 'Write here...',
                                               validator: (value) {
                                                 if (value == null ||
@@ -2805,6 +2978,7 @@ class _InPersonQualitativeFormState extends State<InPersonQualitativeForm> {
                                               textController:
                                                   inpersonQualitativeController
                                                       .interviewStudentsNotController,
+                                              maxlines: 2,
                                               labelText: 'Write here...',
                                               validator: (value) {
                                                 if (value == null ||
@@ -2955,6 +3129,11 @@ class _InPersonQualitativeFormState extends State<InPersonQualitativeForm> {
                                                         .setRadioValue(
                                                             'interviewSmc',
                                                             value);
+                                                    if (value == 'Yes') {
+
+                                                      inpersonQualitativeController.suggestionsProgramController.clear();
+
+                                                    }
                                                   },
                                                 ),
                                                 const Text('Yes'),
@@ -2982,6 +3161,22 @@ class _InPersonQualitativeFormState extends State<InPersonQualitativeForm> {
                                                         .setRadioValue(
                                                             'interviewSmc',
                                                             value);
+                                                    if (value == 'No') {
+
+                                                      inpersonQualitativeController.administrationSchoolController.clear();
+                                                      inpersonQualitativeController.issuesResolveController.clear();
+                                                      inpersonQualitativeController.fearsController.clear();
+                                                      inpersonQualitativeController.easeController.clear();
+                                                      inpersonQualitativeController.guidanceController.clear();
+                                                      inpersonQualitativeController.feedbackDigiLabController.clear();
+                                                      inpersonQualitativeController.effectiveDigiLabController.clear();
+                                                      inpersonQualitativeController.suggestionsProgramController.clear();
+
+                                                      inpersonQualitativeController.clearRadioValue('communityResistance');
+                                                      inpersonQualitativeController.clearRadioValue('digiLabSessions');
+
+
+                                                    }
                                                   },
                                                 ),
                                                 const Text('No'),
@@ -3024,7 +3219,10 @@ class _InPersonQualitativeFormState extends State<InPersonQualitativeForm> {
                                               textController:
                                                   inpersonQualitativeController
                                                       .administrationSchoolController,
+                                              maxlines: 2,
                                               labelText: 'Write here...',
+
+
                                               validator: (value) {
                                                 if (value == null ||
                                                     value.isEmpty) {
@@ -3054,6 +3252,7 @@ class _InPersonQualitativeFormState extends State<InPersonQualitativeForm> {
                                               textController:
                                                   inpersonQualitativeController
                                                       .issuesResolveController,
+                                              maxlines: 2,
                                               labelText: 'Write here...',
                                               validator: (value) {
                                                 if (value == null ||
@@ -3071,6 +3270,10 @@ class _InPersonQualitativeFormState extends State<InPersonQualitativeForm> {
                                               value: 20,
                                               side: 'height',
                                             ),
+                                      if (inpersonQualitativeController
+                                          .getSelectedValue(
+                                      'schoolDigiLab') ==
+                                      'Yes') ...[
                                             LabelText(
                                               label:
                                                   '3. Has there been any resistance from the community or school management or teachers about use of technology for student learning?',
@@ -3123,6 +3326,12 @@ class _InPersonQualitativeFormState extends State<InPersonQualitativeForm> {
                                                           .setRadioValue(
                                                               'communityResistance',
                                                               value);
+                                                      if (value == 'No') {
+
+                                                        inpersonQualitativeController.fearsController.clear();
+                                                        inpersonQualitativeController.easeController.clear();
+
+                                                      }
                                                     },
                                                   ),
                                                   const Text('No'),
@@ -3166,6 +3375,7 @@ class _InPersonQualitativeFormState extends State<InPersonQualitativeForm> {
                                                 textController:
                                                     inpersonQualitativeController
                                                         .fearsController,
+                                                maxlines: 2,
                                                 labelText: 'Write here...',
                                                 validator: (value) {
                                                   if (value == null ||
@@ -3196,6 +3406,7 @@ class _InPersonQualitativeFormState extends State<InPersonQualitativeForm> {
                                                 textController:
                                                     inpersonQualitativeController
                                                         .easeController,
+                                                maxlines: 2,
                                                 labelText: 'Write here...',
                                                 validator: (value) {
                                                   if (value == null ||
@@ -3266,6 +3477,12 @@ class _InPersonQualitativeFormState extends State<InPersonQualitativeForm> {
                                                           .setRadioValue(
                                                               'digiLabSessions',
                                                               value);
+                                                      if (value == 'No') {
+
+                                                        inpersonQualitativeController.guidanceController.clear();
+
+
+                                                      }
                                                     },
                                                   ),
                                                   const Text('No'),
@@ -3309,6 +3526,7 @@ class _InPersonQualitativeFormState extends State<InPersonQualitativeForm> {
                                                 textController:
                                                     inpersonQualitativeController
                                                         .guidanceController,
+                                                maxlines: 2,
                                                 labelText: 'Write here...',
                                                 validator: (value) {
                                                   if (value == null ||
@@ -3327,6 +3545,7 @@ class _InPersonQualitativeFormState extends State<InPersonQualitativeForm> {
                                                 side: 'height',
                                               ),
                                             ],
+                                            ],
                                             LabelText(
                                               label:
                                                   '5. What sort of feedback have you received about the DigiLab & Library from students,parents & teachers?',
@@ -3340,6 +3559,7 @@ class _InPersonQualitativeFormState extends State<InPersonQualitativeForm> {
                                               textController:
                                                   inpersonQualitativeController
                                                       .feedbackDigiLabController,
+                                              maxlines: 2,
                                               labelText: 'Write here...',
                                               validator: (value) {
                                                 if (value == null ||
@@ -3370,6 +3590,7 @@ class _InPersonQualitativeFormState extends State<InPersonQualitativeForm> {
                                               textController:
                                                   inpersonQualitativeController
                                                       .effectiveDigiLabController,
+                                              maxlines: 2,
                                               labelText: 'Write here...',
                                               validator: (value) {
                                                 if (value == null ||
@@ -3400,6 +3621,7 @@ class _InPersonQualitativeFormState extends State<InPersonQualitativeForm> {
                                               textController:
                                                   inpersonQualitativeController
                                                       .suggestionsProgramController,
+                                              maxlines: 2,
                                               labelText: 'Write here...',
                                               validator: (value) {
                                                 if (value == null ||
@@ -3435,6 +3657,7 @@ class _InPersonQualitativeFormState extends State<InPersonQualitativeForm> {
                                               textController:
                                                   inpersonQualitativeController
                                                       .suggestionsProgramController,
+                                              maxlines: 2,
                                               labelText: 'Write here...',
                                               validator: (value) {
                                                 if (value == null ||
@@ -3516,6 +3739,18 @@ class _InPersonQualitativeFormState extends State<InPersonQualitativeForm> {
                                                                             .length))));
                                                       }
 
+                                                      List<File>
+                                                          imagePathFiles = [];
+                                                      for (var imagePath
+                                                          in inpersonQualitativeController
+                                                              .imagePaths) {
+                                                        imagePathFiles.add(File(
+                                                            imagePath)); // Convert image path to File
+                                                      }
+
+                                                      print(
+                                                          'Image Paths: ${imagePathFiles.map((file) => file.path).toList()}');
+
                                                       String uniqueId =
                                                           generateUniqueId(6);
                                                       DateTime now =
@@ -3525,8 +3760,12 @@ class _InPersonQualitativeFormState extends State<InPersonQualitativeForm> {
                                                                   'yyyy-MM-dd')
                                                               .format(now);
 
-                                                      String base64Images = await inpersonQualitativeController.convertImagesToBase64();
-
+                                                      String
+                                                          imagePathFilesPaths =
+                                                          imagePathFiles
+                                                              .map((file) =>
+                                                                  file.path)
+                                                              .join(',');
 
                                                       InPersonQualitativeRecords
                                                           inPersonQualitativeRecords =
@@ -3543,11 +3782,12 @@ class _InPersonQualitativeFormState extends State<InPersonQualitativeForm> {
                                                                 .getSelectedValue(
                                                                     'udiCode') ??
                                                             '',
-                                                            correct_udice:
+                                                        correct_udice:
                                                             inpersonQualitativeController
                                                                 .correctUdiseCodeController
                                                                 .text,
-                                                            imgPath: base64Images, // Store images as a comma-separated string of Base64
+                                                        imgPath:
+                                                            imagePathFilesPaths, // Store images as a comma-separated string of Base64
                                                         school_digiLab:
                                                             inpersonQualitativeController
                                                                     .getSelectedValue(
@@ -3816,14 +4056,17 @@ class _InPersonQualitativeFormState extends State<InPersonQualitativeForm> {
                                                         setState(() {});
 
                                                         // Save the data to a file as JSON
-                                                        await saveDataToFile(inPersonQualitativeRecords).then((_) {
+                                                        await saveDataToFile(
+                                                                inPersonQualitativeRecords)
+                                                            .then((_) {
                                                           // If successful, show a snackbar indicating the file was downloaded
                                                           customSnackbar(
                                                             'File downloaded successfully',
                                                             'downloaded',
                                                             AppColors.primary,
                                                             AppColors.onPrimary,
-                                                            Icons.file_download_done,
+                                                            Icons
+                                                                .file_download_done,
                                                           );
                                                         }).catchError((error) {
                                                           // If there's an error during download, show an error snackbar
@@ -3835,7 +4078,6 @@ class _InPersonQualitativeFormState extends State<InPersonQualitativeForm> {
                                                             Icons.error,
                                                           );
                                                         });
-
 
                                                         customSnackbar(
                                                             'Submitted Successfully',
@@ -3875,7 +4117,6 @@ class _InPersonQualitativeFormState extends State<InPersonQualitativeForm> {
   }
 }
 
-
 Future<void> saveDataToFile(InPersonQualitativeRecords data) async {
   try {
     // Request storage permissions
@@ -3901,19 +4142,45 @@ Future<void> saveDataToFile(InPersonQualitativeRecords data) async {
       }
 
       if (directory != null && !await directory.exists()) {
-        await directory.create(recursive: true); // Create the directory if it doesn't exist
+        await directory.create(
+            recursive: true); // Create the directory if it doesn't exist
       }
 
-      final path = '${directory!.path}/inQualitative_form_${data.submitted_by}.txt';
+      final path =
+          '${directory!.path}/fln_observation_form_${data.unique_id}.txt';
+      print('Saving file to: $path'); // Debugging output
 
       // Convert the EnrolmentCollectionModel object to a JSON string
       String jsonString = jsonEncode(data);
 
-      // Write the JSON string to a file
-      File file = File(path);
-      await file.writeAsString(jsonString);
+      // Handle Base64 conversion for images
+      List<String> base64Images = [];
+      for (String imagePath in data.imgPath!.split(',')) {
+        File imageFile = File(imagePath);
+        if (await imageFile.exists()) {
+          List<int> imageBytes = await imageFile.readAsBytes();
+          String base64Image = base64Encode(imageBytes);
+          base64Images.add(base64Image);
+        } else {
+          print('Image not found: $imagePath');
+        }
+      }
 
-      print('Data saved to $path');
+      // Update the enrolment data to include Base64 image strings
+      Map<String, dynamic> updatedData = jsonDecode(jsonString);
+      updatedData['imgPath'] =
+          base64Images; // Store Base64 instead of file paths
+
+      // Write the updated JSON string to a file
+      File file = File(path);
+      await file.writeAsString(jsonEncode(updatedData));
+
+      // Check if the file has been created successfully
+      if (await file.exists()) {
+        print('File successfully created at: ${file.path}');
+      } else {
+        print('File not found after writing.');
+      }
     } else {
       print('Storage permission not granted');
       // Optionally, handle what happens if permission is denied

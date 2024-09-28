@@ -30,6 +30,7 @@ import 'package:app17000ft_new/components/custom_sizedBox.dart';
 import 'package:app17000ft_new/home/home_screen.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../components/custom_confirmation.dart';
 import 'in_person_quantitative_controller.dart';
 import 'in_person_quantitative_modal.dart';
 
@@ -58,11 +59,21 @@ class _InPersonQuantitativeState extends State<InPersonQuantitative> {
   void _addIssue() async {
     final result = await showModalBottomSheet(
       context: context,
-      isScrollControlled: true,
-      builder: (context) => AddIssueBottomSheet(),
+      isScrollControlled: true, // Allows BottomSheet to resize when the keyboard pops up
+      builder: (context) => Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom, // Adjust for keyboard
+        ),
+        child: SingleChildScrollView(
+          child: AddIssueBottomSheet(),
+        ),
+      ),
     );
 
-    if (result != null && result is Issue) {
+
+
+
+  if (result != null && result is Issue) {
       setState(() {
         issues.add(result);
       });
@@ -75,21 +86,20 @@ class _InPersonQuantitativeState extends State<InPersonQuantitative> {
     });
   }
 
-  final InPersonQuantitativeController inPersonQuantitativeController =
-      Get.put(InPersonQuantitativeController());
+  final InPersonQuantitativeController inPersonQuantitativeController = Get.put(InPersonQuantitativeController());
+
   List<Participants> participants = [];
   bool showError = false;
   String errorMessage = '';
 
   void _addParticipants() async {
     int staffAttended = int.tryParse(inPersonQuantitativeController
-            .staafAttendedTrainingController.text) ??
-        0;
+        .staafAttendedTrainingController.text) ?? 0;
 
     if (staffAttended <= 0) {
       setState(() {
         showError = true;
-        errorMessage = '0 participants cannot be accepted';
+        errorMessage = 'Please fill a number greater than 0';
       });
       return;
     }
@@ -104,22 +114,127 @@ class _InPersonQuantitativeState extends State<InPersonQuantitative> {
 
     final result = await showModalBottomSheet(
       context: context,
-      isScrollControlled: true,
-      builder: (context) => AddParticipantsBottomSheet(
-          existingRoles: participants.map((p) => p.designation).toList()),
+      isScrollControlled: true, // Allows BottomSheet to resize when the keyboard pops up
+      builder: (context) => Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom, // Adjust for keyboard
+        ),
+        child: SingleChildScrollView(
+          child: AddParticipantsBottomSheet(
+            existingRoles: participants.map((p) => p.designation).toList(),
+          ),
+        ),
+      ),
     );
+
+    void _showErrorDialog(String message) {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext context) {
+          return Dialog(
+            backgroundColor: Colors.transparent,
+            child: SizedBox(
+              width: 300, // Adjust width for consistency
+              child: Card(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8), // Rounded corners
+                ),
+                color: Colors.white,
+                clipBehavior: Clip.antiAliasWithSaveLayer,
+                child: Wrap(
+                  children: <Widget>[
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      width: double.infinity,
+                      color: AppColors.primary, // Use the primary color
+                      child: Column(
+                        children: <Widget>[
+                          SizedBox(height: 10),
+                          Icon(
+                            Icons.error, // Error icon
+                            color: Colors.white,
+                            size: 40,
+                          ),
+                          SizedBox(height: 10),
+                          Text(
+                            'Invalid',
+                            style: const TextStyle(color: Colors.white, fontSize: 20),
+                          ),
+                          SizedBox(height: 10),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      child: Column(
+                        children: <Widget>[
+                          Text(
+                            message,
+                            style: const TextStyle(color: Colors.black, fontSize: 16),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      width: double.infinity,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: <Widget>[
+                          ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primary,
+                              elevation: 0,
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 12,
+                                horizontal: 24,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(18.0),
+                              ),
+                            ),
+                            child: const Text(
+                              'OK',
+                              style: TextStyle(color: Colors.white),
+                            ),
+                            onPressed: () {
+                              Navigator.of(context).pop();
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      );
+    }
+
 
     if (result != null && result is Participants) {
       setState(() {
-        int existingIndex =
-            participants.indexWhere((p) => p.designation == result.designation);
-        if (existingIndex >= 0) {
-          participants[existingIndex] = result; // Update existing participant
+        if (result.designation == 'DigiLab Admin') {
+          // Check if "DigiLab Admin" already exists
+          int existingIndex =
+          participants.indexWhere((p) => p.designation == 'DigiLab Admin');
+          if (existingIndex >= 0) {
+            // Show error dialog if trying to add another "DigiLab Admin"
+            _showErrorDialog(
+                'No duplicate designation allowed,except for Teacher and HM,In-Charge cannot have both designations simultaneously');
+          } else {
+            // Add "DigiLab Admin" if it doesn't exist yet
+            participants.add(result);
+          }
         } else {
-          participants.add(result); // Add new participant
+          // For other roles, always add a new entry (don't replace any existing participant)
+          participants.add(result);
         }
-        showError =
-            false; // Reset error if participants are added or updated successfully
+
+        showError = false; // Reset error if participants are added successfully
         errorMessage = '';
       });
     }
@@ -130,7 +245,7 @@ class _InPersonQuantitativeState extends State<InPersonQuantitative> {
     setState(() {
       if (staffAttended == 0) {
         showError = true;
-        errorMessage = '0 participants cannot be accepted';
+        errorMessage = 'Please fill a number greater than 0';
       } else {
         showError = false;
         errorMessage = '';
@@ -143,6 +258,38 @@ class _InPersonQuantitativeState extends State<InPersonQuantitative> {
       participants.removeAt(index);
     });
   }
+
+  void _onNextPressed() {
+    int staffAttended = int.tryParse(inPersonQuantitativeController
+        .staafAttendedTrainingController.text) ?? 0;
+
+    // Check if staff attended is greater than 0
+    if (staffAttended <= 0) {
+      setState(() {
+        showError = true;
+        errorMessage = 'Please fill a number greater than 0';
+      });
+      return;
+    }
+    // Check if the number of participants matches the number of staff attended
+    if (participants.length != staffAttended) {
+      setState(() {
+        showError = true; // Show the error for mismatched counts
+        errorMessage = 'The number of participants must match the number of staff attended.';
+      });
+      return;
+    }
+
+    // Reset error and proceed to the next step if checks are passed
+    setState(() {
+      showError = false;
+      errorMessage = '';
+      inPersonQuantitativeController.showSchoolRefresherTraining = false;
+      inPersonQuantitativeController.showDigiLabClasses = true;
+    });
+  }
+
+
 
 // make this code that if user fill 0 in the staff attendend in the training then show error
   bool _isImageUploaded = false;
@@ -163,8 +310,6 @@ class _InPersonQuantitativeState extends State<InPersonQuantitative> {
 
   bool _isImageUploaded2 = false;
   bool validateRegister2 = false;
-
-
 
   Future<void> _selectDate(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
@@ -187,9 +332,19 @@ class _InPersonQuantitativeState extends State<InPersonQuantitative> {
     final responsive = Responsive(context);
     return WillPopScope(
         onWillPop: () async {
-          bool shouldPop =
-              await BaseClient().showLeaveConfirmationDialog(context);
-          return shouldPop;
+          IconData icon = Icons.check_circle;
+          bool shouldExit = await showDialog(
+              context: context,
+              builder: (_) => Confirmation(
+                  iconname: icon,
+                  title: 'Exit Confirmation',
+                  yes: 'Yes',
+                  no: 'no',
+                  desc: 'Are you sure you want to leave this screen?',
+                  onPressed: () async {
+                    Navigator.of(context).pop(true);
+                  }));
+          return shouldExit;
         },
         child: Scaffold(
           appBar: const CustomAppbar(
@@ -352,7 +507,9 @@ class _InPersonQuantitativeState extends State<InPersonQuantitative> {
                                                 inPersonQuantitativeController
                                                     .setRadioValue(
                                                         'udiCode', value);
-                                                inPersonQuantitativeController.clearTrainingInputs();                                              },
+                                                inPersonQuantitativeController
+                                                    .clearTrainingInputs();
+                                              },
                                             ),
                                             const Text('No'),
                                           ],
@@ -429,40 +586,35 @@ class _InPersonQuantitativeState extends State<InPersonQuantitative> {
                                         height: 60,
                                         decoration: BoxDecoration(
                                           borderRadius:
-                                          BorderRadius.circular(10.0),
+                                              BorderRadius.circular(10.0),
                                           border: Border.all(
                                               width: 2,
-                                              color:
-                                              _isImageUploaded ==
-                                                  false
+                                              color: _isImageUploaded == false
                                                   ? AppColors.primary
                                                   : AppColors.error),
                                         ),
                                         child: ListTile(
-                                            title:
-                                            _isImageUploaded ==
-                                                false
+                                            title: _isImageUploaded == false
                                                 ? const Text(
-                                              'Click or Upload Image',
-                                            )
+                                                    'Click or Upload Image',
+                                                  )
                                                 : const Text(
-                                              'Click or Upload Image',
-                                              style: TextStyle(
-                                                  color: AppColors
-                                                      .error),
-                                            ),
+                                                    'Click or Upload Image',
+                                                    style: TextStyle(
+                                                        color: AppColors.error),
+                                                  ),
                                             trailing: const Icon(
                                                 Icons.camera_alt,
-                                                color:
-                                                AppColors.onBackground),
+                                                color: AppColors.onBackground),
                                             onTap: () {
                                               showModalBottomSheet(
                                                   backgroundColor:
-                                                  AppColors.primary,
+                                                      AppColors.primary,
                                                   context: context,
                                                   builder: ((builder) =>
-inPersonQuantitativeController                                                          .bottomSheet(
-                                                          context)));
+                                                      inPersonQuantitativeController
+                                                          .bottomSheet(
+                                                              context)));
                                             }),
                                       ),
                                       ErrorText(
@@ -475,93 +627,94 @@ inPersonQuantitativeController                                                  
                                       ),
 
                                       inPersonQuantitativeController
-                                          .multipleImage.isNotEmpty
+                                              .multipleImage.isNotEmpty
                                           ? Container(
-                                        width: responsive
-                                            .responsiveValue(
-                                            small: 600.0,
-                                            medium: 900.0,
-                                            large: 1400.0),
-                                        height: responsive
-                                            .responsiveValue(
-                                            small: 170.0,
-                                            medium: 170.0,
-                                            large: 170.0),
-                                        decoration: BoxDecoration(
-                                          border: Border.all(
-                                              color: Colors.grey),
-                                          borderRadius:
-                                          BorderRadius.circular(
-                                              10),
-                                        ),
-                                        child:
-                                        inPersonQuantitativeController
-                                            .multipleImage
-                                            .isEmpty
-                                            ? const Center(
-                                          child: Text(
-                                              'No images selected.'),
-                                        )
-                                            : ListView.builder(
-                                          scrollDirection:
-                                          Axis.horizontal,
-                                          itemCount:
-                                          inPersonQuantitativeController
-                                              .multipleImage
-                                              .length,
-                                          itemBuilder:
-                                              (context,
-                                              index) {
-                                            return SizedBox(
-                                              height: 200,
-                                              width: 200,
-                                              child: Column(
-                                                children: [
-                                                  Padding(
-                                                    padding: const EdgeInsets
-                                                        .all(
-                                                        8.0),
-                                                    child:
-                                                    GestureDetector(
-                                                      onTap:
-                                                          () {
-                                                        CustomImagePreview.showImagePreview(inPersonQuantitativeController.multipleImage[index].path,
-                                                            context);
-                                                      },
-                                                      child:
-                                                      Image.file(
-                                                        File(inPersonQuantitativeController.multipleImage[index].path),
-                                                        width:
-                                                        190,
-                                                        height:
-                                                        120,
-                                                        fit:
-                                                        BoxFit.fill,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                  GestureDetector(
-                                                    onTap:
-                                                        () {
-                                                      setState(
-                                                              () {
-                                                                inPersonQuantitativeController.multipleImage.removeAt(index);
-                                                          });
-                                                    },
-                                                    child:
-                                                    const Icon(
-                                                      Icons
-                                                          .delete,
-                                                      color:
-                                                      Colors.red,
-                                                    ),
-                                                  ),
-                                                ],
+                                              width: responsive.responsiveValue(
+                                                  small: 600.0,
+                                                  medium: 900.0,
+                                                  large: 1400.0),
+                                              height:
+                                                  responsive.responsiveValue(
+                                                      small: 170.0,
+                                                      medium: 170.0,
+                                                      large: 170.0),
+                                              decoration: BoxDecoration(
+                                                border: Border.all(
+                                                    color: Colors.grey),
+                                                borderRadius:
+                                                    BorderRadius.circular(10),
                                               ),
-                                            );
-                                          },
-                                        ),
-                                      )
+                                              child:
+                                                  inPersonQuantitativeController
+                                                          .multipleImage.isEmpty
+                                                      ? const Center(
+                                                          child: Text(
+                                                              'No images selected.'),
+                                                        )
+                                                      : ListView.builder(
+                                                          scrollDirection:
+                                                              Axis.horizontal,
+                                                          itemCount:
+                                                              inPersonQuantitativeController
+                                                                  .multipleImage
+                                                                  .length,
+                                                          itemBuilder:
+                                                              (context, index) {
+                                                            return SizedBox(
+                                                              height: 200,
+                                                              width: 200,
+                                                              child: Column(
+                                                                children: [
+                                                                  Padding(
+                                                                    padding:
+                                                                        const EdgeInsets
+                                                                            .all(
+                                                                            8.0),
+                                                                    child:
+                                                                        GestureDetector(
+                                                                      onTap:
+                                                                          () {
+                                                                        CustomImagePreview.showImagePreview(
+                                                                            inPersonQuantitativeController.multipleImage[index].path,
+                                                                            context);
+                                                                      },
+                                                                      child: Image
+                                                                          .file(
+                                                                        File(inPersonQuantitativeController
+                                                                            .multipleImage[index]
+                                                                            .path),
+                                                                        width:
+                                                                            190,
+                                                                        height:
+                                                                            120,
+                                                                        fit: BoxFit
+                                                                            .fill,
+                                                                      ),
+                                                                    ),
+                                                                  ),
+                                                                  GestureDetector(
+                                                                    onTap: () {
+                                                                      setState(
+                                                                          () {
+                                                                        inPersonQuantitativeController
+                                                                            .multipleImage
+                                                                            .removeAt(index);
+                                                                      });
+                                                                    },
+                                                                    child:
+                                                                        const Icon(
+                                                                      Icons
+                                                                          .delete,
+                                                                      color: Colors
+                                                                          .red,
+                                                                    ),
+                                                                  ),
+                                                                ],
+                                                              ),
+                                                            );
+                                                          },
+                                                        ),
+                                            )
                                           : const SizedBox(),
                                       CustomSizedBox(
                                         value: 20,
@@ -621,8 +774,7 @@ inPersonQuantitativeController                                                  
                                           if (_formKey.currentState!
                                                   .validate() &&
                                               isRadioValid1 &&
-                                              !validateRegister
-                                              ) {
+                                              !validateRegister) {
                                             setState(() {
                                               inPersonQuantitativeController
                                                   .showBasicDetails = false;
@@ -651,20 +803,26 @@ inPersonQuantitativeController                                                  
                                         side: 'height',
                                       ),
                                       LabelText(
-                                        label: '1. Is DigiLab Schedule/timetable available?',
+                                        label:
+                                            '1. Is DigiLab Schedule/timetable available?',
                                         astrick: true,
                                       ),
                                       Padding(
-                                        padding: const EdgeInsets.only(right: 300),
+                                        padding:
+                                            const EdgeInsets.only(right: 300),
                                         child: Row(
                                           children: [
                                             Radio(
                                               value: 'Yes',
-                                              groupValue: inPersonQuantitativeController.getSelectedValue('digiLabSchedule'),
+                                              groupValue:
+                                                  inPersonQuantitativeController
+                                                      .getSelectedValue(
+                                                          'digiLabSchedule'),
                                               onChanged: (value) {
-                                                setState(() {
-                                                  inPersonQuantitativeController.setRadioValue('digiLabSchedule', value);
-                                                });
+                                                inPersonQuantitativeController
+                                                    .setRadioValue(
+                                                        'digiLabSchedule',
+                                                        value);
                                               },
                                             ),
                                             const Text('Yes'),
@@ -675,36 +833,45 @@ inPersonQuantitativeController                                                  
                                         value: 150,
                                         side: 'width',
                                       ),
+                                      // make it that user can also edit the tourId and school
                                       Padding(
-                                        padding: const EdgeInsets.only(right: 300),
+                                        padding:
+                                            const EdgeInsets.only(right: 300),
                                         child: Row(
                                           children: [
                                             Radio(
                                               value: 'No',
-                                              groupValue: inPersonQuantitativeController.getSelectedValue('digiLabSchedule'),
+                                              groupValue:
+                                                  inPersonQuantitativeController
+                                                      .getSelectedValue(
+                                                          'digiLabSchedule'),
                                               onChanged: (value) {
-                                                setState(() {
-                                                  inPersonQuantitativeController.setRadioValue('digiLabSchedule', value);
-
-                                                  // Clear the selection for 'class2Hours' when 'No' is selected for 'digiLabSchedule'
-                                                  if (value == 'No') {
-                                                    inPersonQuantitativeController.clearRadioValue('class2Hours');
-                                                  }
-                                                });
+                                                inPersonQuantitativeController
+                                                    .setRadioValue(
+                                                        'digiLabSchedule',
+                                                        value);
+                                                if (value == 'No') {
+                                                  inPersonQuantitativeController
+                                                      .clearRadioValue(
+                                                          'class2Hours');
+                                                }
                                               },
                                             ),
                                             const Text('No'),
                                           ],
                                         ),
                                       ),
-                                      if (inPersonQuantitativeController.getRadioFieldError('digiLabSchedule'))
+                                      if (inPersonQuantitativeController
+                                          .getRadioFieldError(
+                                              'digiLabSchedule'))
                                         const Padding(
                                           padding: EdgeInsets.only(left: 16.0),
                                           child: Align(
                                             alignment: Alignment.centerLeft,
                                             child: Text(
                                               'Please select an option',
-                                              style: TextStyle(color: Colors.red),
+                                              style:
+                                                  TextStyle(color: Colors.red),
                                             ),
                                           ),
                                         ),
@@ -712,24 +879,30 @@ inPersonQuantitativeController                                                  
                                         value: 20,
                                         side: 'height',
                                       ),
-
-// Only show the next section if 'digiLabSchedule' is 'Yes'
-                                      if (inPersonQuantitativeController.getSelectedValue('digiLabSchedule') == 'Yes') ...[
+                                      if (inPersonQuantitativeController
+                                              .getSelectedValue(
+                                                  'digiLabSchedule') ==
+                                          'Yes') ...[
                                         LabelText(
-                                          label: '1.1. Each class scheduled for 2 hours per week?',
+                                          label:
+                                              '1.1. Each class scheduled for 2 hours per week?',
                                           astrick: true,
                                         ),
                                         Padding(
-                                          padding: const EdgeInsets.only(right: 300),
+                                          padding:
+                                              const EdgeInsets.only(right: 300),
                                           child: Row(
                                             children: [
                                               Radio(
                                                 value: 'Yes',
-                                                groupValue: inPersonQuantitativeController.getSelectedValue('class2Hours'),
+                                                groupValue:
+                                                    inPersonQuantitativeController
+                                                        .getSelectedValue(
+                                                            'class2Hours'),
                                                 onChanged: (value) {
-                                                  setState(() {
-                                                    inPersonQuantitativeController.setRadioValue('class2Hours', value);
-                                                  });
+                                                  inPersonQuantitativeController
+                                                      .setRadioValue(
+                                                          'class2Hours', value);
                                                 },
                                               ),
                                               const Text('Yes'),
@@ -740,31 +913,39 @@ inPersonQuantitativeController                                                  
                                           value: 150,
                                           side: 'width',
                                         ),
+                                        // make it that user can also edit the tourId and school
                                         Padding(
-                                          padding: const EdgeInsets.only(right: 300),
+                                          padding:
+                                              const EdgeInsets.only(right: 300),
                                           child: Row(
                                             children: [
                                               Radio(
                                                 value: 'No',
-                                                groupValue: inPersonQuantitativeController.getSelectedValue('class2Hours'),
+                                                groupValue:
+                                                    inPersonQuantitativeController
+                                                        .getSelectedValue(
+                                                            'class2Hours'),
                                                 onChanged: (value) {
-                                                  setState(() {
-                                                    inPersonQuantitativeController.setRadioValue('class2Hours', value);
-                                                  });
+                                                  inPersonQuantitativeController
+                                                      .setRadioValue(
+                                                          'class2Hours', value);
                                                 },
                                               ),
                                               const Text('No'),
                                             ],
                                           ),
                                         ),
-                                        if (inPersonQuantitativeController.getRadioFieldError('class2Hours'))
+                                        if (inPersonQuantitativeController
+                                            .getRadioFieldError('class2Hours'))
                                           const Padding(
-                                            padding: EdgeInsets.only(left: 16.0),
+                                            padding:
+                                                EdgeInsets.only(left: 16.0),
                                             child: Align(
                                               alignment: Alignment.centerLeft,
                                               child: Text(
                                                 'Please select an option',
-                                                style: TextStyle(color: Colors.red),
+                                                style: TextStyle(
+                                                    color: Colors.red),
                                               ),
                                             ),
                                           ),
@@ -772,8 +953,7 @@ inPersonQuantitativeController                                                  
                                           value: 20,
                                           side: 'height',
                                         ),
-
-                                    ],
+                                      ],
 
                                       LabelText(
                                         label:
@@ -929,9 +1109,15 @@ inPersonQuantitativeController                                                  
                                                         'isDigiLabAdminAppointed',
                                                         value);
                                                 if (value == 'No') {
-                                                  inPersonQuantitativeController.clearRadioValue('isDigiLabAdminTrained');
-                                                  inPersonQuantitativeController.digiLabAdminNameController.clear();
-                                                  inPersonQuantitativeController.digiLabAdminPhoneNumberController.clear();
+                                                  inPersonQuantitativeController
+                                                      .clearRadioValue(
+                                                          'isDigiLabAdminTrained');
+                                                  inPersonQuantitativeController
+                                                      .digiLabAdminNameController
+                                                      .clear();
+                                                  inPersonQuantitativeController
+                                                      .digiLabAdminPhoneNumberController
+                                                      .clear();
                                                 }
                                               },
                                             ),
@@ -1189,7 +1375,8 @@ inPersonQuantitativeController                                                  
                                                     .setRadioValue(
                                                         'idHasBeenCreated',
                                                         value);
-                                                setState(() {}); // Triggers UI update
+                                                setState(
+                                                    () {}); // Triggers UI update
                                               },
                                             ),
                                             const Text('Yes'),
@@ -1218,8 +1405,9 @@ inPersonQuantitativeController                                                  
                                                         'idHasBeenCreated',
                                                         value);
                                                 if (value == 'No') {
-                                                  inPersonQuantitativeController.clearRadioValue('teacherUsingTablet');
-
+                                                  inPersonQuantitativeController
+                                                      .clearRadioValue(
+                                                          'teacherUsingTablet');
                                                 }
                                               },
                                             ),
@@ -1271,7 +1459,8 @@ inPersonQuantitativeController                                                  
                                                       .setRadioValue(
                                                           'teacherUsingTablet',
                                                           value);
-                                                  setState(() {}); // Triggers UI update
+                                                  setState(
+                                                      () {}); // Triggers UI update
                                                 },
                                               ),
                                               const Text('Yes'),
@@ -1299,7 +1488,8 @@ inPersonQuantitativeController                                                  
                                                       .setRadioValue(
                                                           'teacherUsingTablet',
                                                           value);
-                                                  setState(() {}); // Triggers UI update
+                                                  setState(
+                                                      () {}); // Triggers UI update
                                                 },
                                               ),
                                               const Text('No'),
@@ -1421,104 +1611,80 @@ inPersonQuantitativeController                                                  
                                     // Start of In School Refresher Training
                                     if (inPersonQuantitativeController
                                         .showSchoolRefresherTraining) ...[
-                                      LabelText(
-                                          label:
-                                              'In School Refresher Training'),
-                                      CustomSizedBox(value: 20, side: 'height'),
-                                      LabelText(
-                                          label:
-                                              '1. How many staff attended the training?',
-                                          astrick: true),
+                                      LabelText(label: '1. How many staff attended the training?', astrick: true),
                                       CustomSizedBox(value: 20, side: 'height'),
                                       CustomTextFormField(
-                                        textController:
-                                            inPersonQuantitativeController
-                                                .staafAttendedTrainingController,
+                                        textController: inPersonQuantitativeController.staafAttendedTrainingController,
                                         labelText: 'Number of Staffs',
                                         textInputType: TextInputType.number,
                                         inputFormatters: [
-                                          LengthLimitingTextInputFormatter(3),
-                                          FilteringTextInputFormatter
-                                              .digitsOnly,
+                                          LengthLimitingTextInputFormatter(3), // Limit to 3 digits
+                                          FilteringTextInputFormatter.digitsOnly, // Allow only digits
                                         ],
                                         validator: (value) {
                                           if (value == null || value.isEmpty) {
                                             return 'Please fill this field';
                                           }
-                                          if (!RegExp(r'^[0-9]+$')
-                                              .hasMatch(value)) {
-                                            return 'Please enter a valid number';
+                                          if (int.tryParse(value) == 0) {
+                                            return 'Please enter a number greater than 0';
                                           }
-
-                                          return null;
+                                          return null; // No error
                                         },
-                                        onChanged: _handleStaffAttendedChange,
+                                        onChanged: _handleStaffAttendedChange, // Update state on change
                                         showCharacterCount: true,
                                       ),
                                       CustomSizedBox(value: 20, side: 'height'),
-
-                                      if (inPersonQuantitativeController
-                                          .staafAttendedTrainingController
-                                          .text
-                                          .isNotEmpty) ...[
-                                        Row(
-                                          children: [
-                                            LabelText(
-                                                label:
-                                                    '1.1 Add Participants Details'),
-                                            CustomSizedBox(
-                                                value: 10, side: 'width'),
-                                            IconButton(
-                                              icon: const Icon(Icons.add),
-                                              iconSize: 40,
-                                              color: Color.fromARGB(
-                                                  255, 141, 13, 21),
-                                              onPressed: _addParticipants,
-                                            ),
-                                          ],
-                                        ),
-                                        CustomSizedBox(
-                                            value: 20, side: 'height'),
-                                        participants.isEmpty
-                                            ? const Center(
-                                                child: Text('No records'))
-                                            : ListView.builder(
-                                                shrinkWrap: true,
-                                                physics:
-                                                    const NeverScrollableScrollPhysics(),
-                                                itemCount: participants.length,
-                                                itemBuilder: (context, index) {
-                                                  return ListTile(
-                                                    title: Text(
-                                                        '${index + 1}. Name: ${participants[index].nameOfParticipants}\n    Designation: ${participants[index].designation}'),
-                                                    trailing: IconButton(
-                                                      icon: const Icon(
-                                                          Icons.delete),
-                                                      onPressed: () =>
-                                                          _deleteParticipants(
-                                                              index),
-                                                    ),
-                                                  );
-                                                },
+                                      if (int.tryParse(inPersonQuantitativeController.staafAttendedTrainingController.text) != null &&
+                                          int.tryParse(inPersonQuantitativeController.staafAttendedTrainingController.text)! > 0)
+                                        ...[
+                                          Row(
+                                            children: [
+                                              LabelText(label: '1.1 Add Participants Details'),
+                                              CustomSizedBox(value: 10, side: 'width'),
+                                              IconButton(
+                                                icon: const Icon(Icons.add),
+                                                iconSize: 40,
+                                                color: Color.fromARGB(255, 141, 13, 21),
+                                                onPressed: _addParticipants, // Trigger add participants function
                                               ),
-                                        CustomSizedBox(
-                                          value: 20,
-                                          side: 'height',
-                                        ),
-                                        if (showError)
-                                          Padding(
-                                            padding: const EdgeInsets.only(
-                                                left: 16.0),
-                                            child: Align(
-                                              alignment: Alignment.centerLeft,
-                                              child: const Text(
-                                                'Please add details for the Participants',
-                                                style: TextStyle(
-                                                    color: Colors.red),
-                                              ),
-                                            ),
+                                            ],
                                           ),
-                                      ],
+                                          CustomSizedBox(value: 20, side: 'height'),
+                                          participants.isEmpty
+                                              ? const Center(child: Text('No records'))
+                                              : ListView.builder(
+                                            shrinkWrap: true, // Use space efficiently
+                                            physics: const NeverScrollableScrollPhysics(), // Disable scrolling
+                                            itemCount: participants.length,
+                                            itemBuilder: (context, index) {
+                                              return ListTile(
+                                                title: Text(
+                                                  '${index + 1}. Name: ${participants[index].nameOfParticipants}\n    Designation: ${participants[index].designation}',
+                                                ),
+                                                trailing: IconButton(
+                                                  icon: const Icon(Icons.delete),
+                                                  color: Colors.red, // Set the icon color to red
+                                                  onPressed: () => _deleteParticipants(index), // Delete participant
+                                                ),
+                                              );
+                                            },
+                                          ),
+                                          CustomSizedBox(value: 20, side: 'height'),
+                                          // Show error if participants count does not match staff attended
+                                          if (showError)
+                                            Padding(
+                                              padding: const EdgeInsets.only(left: 16.0),
+                                              child: Align(
+                                                alignment: Alignment.centerLeft,
+                                                child: const Text(
+                                                  'The number of participants must match the number of staff attended.',
+                                                  style: TextStyle(color: Colors.red),
+                                                ),
+                                              ),
+                                            ),
+
+
+                                    ],
                                       CustomSizedBox(
                                         value: 20,
                                         side: 'height',
@@ -1536,138 +1702,136 @@ inPersonQuantitativeController                                                  
                                         height: 60,
                                         decoration: BoxDecoration(
                                           borderRadius:
-                                          BorderRadius.circular(10.0),
+                                              BorderRadius.circular(10.0),
                                           border: Border.all(
                                               width: 2,
-                                              color: _isImageUploaded2 ==
-                                                  false
+                                              color: _isImageUploaded2 == false
                                                   ? AppColors.primary
                                                   : AppColors.error),
                                         ),
                                         child: ListTile(
-                                            title:
-                                            _isImageUploaded2 == false
+                                            title: _isImageUploaded2 == false
                                                 ? const Text(
-                                              'Click or Upload Image',
-                                            )
+                                                    'Click or Upload Image',
+                                                  )
                                                 : const Text(
-                                              'Click or Upload Image',
-                                              style: TextStyle(
-                                                  color: AppColors
-                                                      .error),
-                                            ),
+                                                    'Click or Upload Image',
+                                                    style: TextStyle(
+                                                        color: AppColors.error),
+                                                  ),
                                             trailing: const Icon(
                                                 Icons.camera_alt,
-                                                color:
-                                                AppColors.onBackground),
+                                                color: AppColors.onBackground),
                                             onTap: () {
                                               showModalBottomSheet(
                                                   backgroundColor:
-                                                  AppColors.primary,
+                                                      AppColors.primary,
                                                   context: context,
                                                   builder: ((builder) =>
                                                       inPersonQuantitativeController
                                                           .bottomSheet2(
-                                                          context)));
+                                                              context)));
                                             }),
                                       ),
                                       ErrorText(
                                         isVisible: validateRegister2,
                                         message:
-                                        'library Register Image Required',
+                                            'library Register Image Required',
                                       ),
                                       CustomSizedBox(
                                         value: 20,
                                         side: 'height',
                                       ),
                                       inPersonQuantitativeController
-                                          .multipleImage2.isNotEmpty
+                                              .multipleImage2.isNotEmpty
                                           ? Container(
-                                        width: responsive
-                                            .responsiveValue(
-                                            small: 600.0,
-                                            medium: 900.0,
-                                            large: 1400.0),
-                                        height: responsive
-                                            .responsiveValue(
-                                            small: 170.0,
-                                            medium: 170.0,
-                                            large: 170.0),
-                                        decoration: BoxDecoration(
-                                          border: Border.all(
-                                              color: Colors.grey),
-                                          borderRadius:
-                                          BorderRadius.circular(
-                                              10),
-                                        ),
-                                        child:
-                                        inPersonQuantitativeController
-                                            .multipleImage2
-                                            .isEmpty
-                                            ? const Center(
-                                          child: Text(
-                                              'No images selected.'),
-                                        )
-                                            : ListView.builder(
-                                          scrollDirection:
-                                          Axis.horizontal,
-                                          itemCount:
-                                          inPersonQuantitativeController
-                                              .multipleImage2
-                                              .length,
-                                          itemBuilder:
-                                              (context,
-                                              index) {
-                                            return SizedBox(
-                                              height: 200,
-                                              width: 200,
-                                              child: Column(
-                                                children: [
-                                                  Padding(
-                                                    padding: const EdgeInsets
-                                                        .all(
-                                                        8.0),
-                                                    child:
-                                                    GestureDetector(
-                                                      onTap:
-                                                          () {
-                                                        CustomImagePreview2.showImagePreview2(inPersonQuantitativeController.multipleImage2[index].path,
-                                                            context);
-                                                      },
-                                                      child:
-                                                      Image.file(
-                                                        File(inPersonQuantitativeController.multipleImage2[index].path),
-                                                        width:
-                                                        190,
-                                                        height:
-                                                        120,
-                                                        fit:
-                                                        BoxFit.fill,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                  GestureDetector(
-                                                    onTap:
-                                                        () {
-                                                      setState(
-                                                              () {
-                                                                inPersonQuantitativeController.multipleImage2.removeAt(index);
-                                                          });
-                                                    },
-                                                    child:
-                                                    const Icon(
-                                                      Icons
-                                                          .delete,
-                                                      color:
-                                                      Colors.red,
-                                                    ),
-                                                  ),
-                                                ],
+                                              width: responsive.responsiveValue(
+                                                  small: 600.0,
+                                                  medium: 900.0,
+                                                  large: 1400.0),
+                                              height:
+                                                  responsive.responsiveValue(
+                                                      small: 170.0,
+                                                      medium: 170.0,
+                                                      large: 170.0),
+                                              decoration: BoxDecoration(
+                                                border: Border.all(
+                                                    color: Colors.grey),
+                                                borderRadius:
+                                                    BorderRadius.circular(10),
                                               ),
-                                            );
-                                          },
-                                        ),
-                                      )
+                                              child:
+                                                  inPersonQuantitativeController
+                                                          .multipleImage2
+                                                          .isEmpty
+                                                      ? const Center(
+                                                          child: Text(
+                                                              'No images selected.'),
+                                                        )
+                                                      : ListView.builder(
+                                                          scrollDirection:
+                                                              Axis.horizontal,
+                                                          itemCount:
+                                                              inPersonQuantitativeController
+                                                                  .multipleImage2
+                                                                  .length,
+                                                          itemBuilder:
+                                                              (context, index) {
+                                                            return SizedBox(
+                                                              height: 200,
+                                                              width: 200,
+                                                              child: Column(
+                                                                children: [
+                                                                  Padding(
+                                                                    padding:
+                                                                        const EdgeInsets
+                                                                            .all(
+                                                                            8.0),
+                                                                    child:
+                                                                        GestureDetector(
+                                                                      onTap:
+                                                                          () {
+                                                                        CustomImagePreview2.showImagePreview2(
+                                                                            inPersonQuantitativeController.multipleImage2[index].path,
+                                                                            context);
+                                                                      },
+                                                                      child: Image
+                                                                          .file(
+                                                                        File(inPersonQuantitativeController
+                                                                            .multipleImage2[index]
+                                                                            .path),
+                                                                        width:
+                                                                            190,
+                                                                        height:
+                                                                            120,
+                                                                        fit: BoxFit
+                                                                            .fill,
+                                                                      ),
+                                                                    ),
+                                                                  ),
+                                                                  GestureDetector(
+                                                                    onTap: () {
+                                                                      setState(
+                                                                          () {
+                                                                        inPersonQuantitativeController
+                                                                            .multipleImage2
+                                                                            .removeAt(index);
+                                                                      });
+                                                                    },
+                                                                    child:
+                                                                        const Icon(
+                                                                      Icons
+                                                                          .delete,
+                                                                      color: Colors
+                                                                          .red,
+                                                                    ),
+                                                                  ),
+                                                                ],
+                                                              ),
+                                                            );
+                                                          },
+                                                        ),
+                                            )
                                           : const SizedBox(),
 
                                       CustomSizedBox(
@@ -1775,12 +1939,19 @@ inPersonQuantitativeController                                                  
                                           setState(() {
                                             inPersonQuantitativeController
                                                 .checkboxValue8 = value!;
-                                            // Update the visibility of the text field
+                                            // Clear the text field if the checkbox is unchecked
+                                            if (!inPersonQuantitativeController
+                                                .checkboxValue8) {
+                                              inPersonQuantitativeController
+                                                  .otherTopicsController
+                                                  .clear();
+                                            }
                                           });
                                         },
                                         title: const Text('Any other'),
                                         activeColor: Colors.green,
                                       ),
+
                                       if (inPersonQuantitativeController
                                           .checkBoxError)
                                         Padding(
@@ -1816,8 +1987,10 @@ inPersonQuantitativeController                                                  
                                           textController:
                                               inPersonQuantitativeController
                                                   .otherTopicsController,
+                                          maxlines: 2,
                                           labelText:
                                               'Please Specify what the other topics',
+
                                           validator: (value) {
                                             if (value!.isEmpty) {
                                               return 'Please fill this field';
@@ -1882,6 +2055,11 @@ inPersonQuantitativeController                                                  
                                                 inPersonQuantitativeController
                                                     .setRadioValue(
                                                         'practicalDemo', value);
+                                                if (value == 'No') {
+                                                  inPersonQuantitativeController
+                                                      .reasonForNotGivenpracticalDemoController.clear();
+
+                                                }
                                               },
                                             ),
                                             const Text('No'),
@@ -1978,7 +2156,9 @@ inPersonQuantitativeController                                                  
                                                       '${index + 1}. Issue: ${issues[index].issue}\n    Resolution: ${issues[index].resolution}'),
                                                   trailing: IconButton(
                                                     icon: const Icon(
-                                                        Icons.delete),
+                                                        Icons.delete,
+                                                      color: Colors.red, // Set the icon color to red
+                                                    ),
                                                     onPressed: () =>
                                                         _deleteIssue(index),
                                                   ),
@@ -2001,6 +2181,7 @@ inPersonQuantitativeController                                                  
                                         textController:
                                             inPersonQuantitativeController
                                                 .additionalCommentOnteacherCapacityController,
+                                        maxlines: 2,
                                         labelText: 'Write your comments if any',
                                         showCharacterCount: true,
                                       ),
@@ -2026,21 +2207,7 @@ inPersonQuantitativeController                                                  
                                           CustomButton(
                                             title: 'Next',
                                             onPressedButton: () {
-                                              // Check if staff attended is 0
-                                              int staffAttended = int.tryParse(
-                                                      inPersonQuantitativeController
-                                                          .staafAttendedTrainingController
-                                                          .text) ??
-                                                  0;
-
-                                              if (staffAttended == 0) {
-                                                setState(() {
-                                                  showError = true;
-                                                  errorMessage =
-                                                      '0 participants cannot be accepted';
-                                                });
-                                                return;
-                                              }
+                                              _onNextPressed;
                                               // Check if at least one checkbox is selected
                                               bool isCheckboxSelected = inPersonQuantitativeController.checkboxValue1 ||
                                                   inPersonQuantitativeController
@@ -2075,17 +2242,6 @@ inPersonQuantitativeController                                                  
                                                       .validateRadioSelection(
                                                           'practicalDemo');
 
-                                              if (participants.length !=
-                                                      staffAttended ||
-                                                  staffAttended == 0) {
-                                                setState(() {
-                                                  showError = true;
-                                                });
-                                              } else {
-                                                setState(() {
-                                                  showError = false;
-                                                });
-                                              }
 
                                               // Validate the form and other conditions
                                               if (_formKey.currentState!
@@ -2107,7 +2263,8 @@ inPersonQuantitativeController                                                  
                                                 setState(() {
                                                   validateRegister2 =
                                                       inPersonQuantitativeController
-                                                          .multipleImage2.isEmpty;// Only show the image error if no image is uploaded
+                                                          .multipleImage2
+                                                          .isEmpty; // Only show the image error if no image is uploaded
                                                 });
                                               }
                                             },
@@ -2459,6 +2616,10 @@ inPersonQuantitativeController                                                  
                                                 inPersonQuantitativeController
                                                     .setRadioValue(
                                                         'digiLabLog', value);
+                                                if (value == 'No') {
+                                                  inPersonQuantitativeController.clearRadioValue('logFilled');
+
+                                                }
                                               },
                                             ),
                                             const Text('No'),
@@ -2679,6 +2840,13 @@ inPersonQuantitativeController                                                  
                                                 inPersonQuantitativeController
                                                     .setRadioValue(
                                                         'facilatorApp', value);
+                                                if (value == 'No') {
+                                                  inPersonQuantitativeController.howOftenDataBeingSyncedController.clear();
+                                                  inPersonQuantitativeController
+                                                      .dateController.clear();
+
+
+                                                }
                                               },
                                             ),
                                             const Text('No'),
@@ -2951,6 +3119,10 @@ inPersonQuantitativeController                                                  
                                                 inPersonQuantitativeController
                                                     .setRadioValue(
                                                         'libTmeTable', value);
+                                                if (value == 'No') {
+                                                  inPersonQuantitativeController.clearRadioValue('followedTimeTable');
+
+                                                }
                                               },
                                             ),
                                             const Text('No'),
@@ -3135,13 +3307,9 @@ inPersonQuantitativeController                                                  
                                         textController:
                                             inPersonQuantitativeController
                                                 .additionalObservationOnLibraryController,
+                                        maxlines: 2,
                                         labelText: 'Write Comments if any',
-                                        validator: (value) {
-                                          if (value!.isEmpty) {
-                                            return 'Please fill this field';
-                                          }
-                                          return null;
-                                        },
+
                                         showCharacterCount: true,
                                       ),
                                       CustomSizedBox(
@@ -3259,19 +3427,30 @@ inPersonQuantitativeController                                                  
                                                     isRadioValid19 &&
                                                     isRadioValid20) {
                                                   // Combine participants data into a single string
-                                                  String participantsDataJson = jsonEncode(participants.map((participant) {
+                                                  String participantsDataJson =
+                                                      jsonEncode(participants
+                                                          .map((participant) {
                                                     return {
-                                                      'Name': participant.nameOfParticipants,
-                                                      'Designation': participant.designation,
+                                                      'Name': participant
+                                                          .nameOfParticipants,
+                                                      'Designation': participant
+                                                          .designation,
                                                     };
                                                   }).toList());
 
                                                   // Convert issues data to JSON
-                                                  String issueAndResolutionJson = jsonEncode(issues.map((issue) {
+                                                  String
+                                                      issueAndResolutionJson =
+                                                      jsonEncode(
+                                                          issues.map((issue) {
                                                     return {
                                                       'Issue': issue.issue,
-                                                      'Resolution': issue.resolution,
-                                                      'IsResolved': issue.isResolved ? "Yes" : "No",
+                                                      'Resolution':
+                                                          issue.resolution,
+                                                      'IsResolved':
+                                                          issue.isResolved
+                                                              ? "Yes"
+                                                              : "No",
                                                     };
                                                   }).toList());
 
@@ -3280,27 +3459,76 @@ inPersonQuantitativeController                                                  
                                                       DateFormat('yyyy-MM-dd')
                                                           .format(now);
 
-                                                  String generateUniqueId(int length) {
-                                                    const _chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+                                                  String generateUniqueId(
+                                                      int length) {
+                                                    const _chars =
+                                                        'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
                                                     Random _rnd = Random();
-                                                    return String.fromCharCodes(Iterable.generate(
-                                                        length, (_) => _chars.codeUnitAt(_rnd.nextInt(_chars.length))));
+                                                    return String.fromCharCodes(
+                                                        Iterable.generate(
+                                                            length,
+                                                            (_) => _chars
+                                                                .codeUnitAt(_rnd
+                                                                    .nextInt(_chars
+                                                                        .length))));
                                                   }
 
-                                                  String uniqueId = generateUniqueId(6);
+                                                  List<File> imgPathFiles = [];
+                                                  for (var imagePath
+                                                      in inPersonQuantitativeController
+                                                          .imagePaths) {
+                                                    imgPathFiles.add(File(
+                                                        imagePath)); // Convert image path to File
+                                                  }
+
+                                                  List<File> training_picFiles =
+                                                      [];
+                                                  for (var imagePath2
+                                                      in inPersonQuantitativeController
+                                                          .imagePaths2) {
+                                                    training_picFiles.add(File(
+                                                        imagePath2)); // Convert image path to File
+                                                  }
+
+                                                  print(
+                                                      'Image Paths: ${imgPathFiles.map((file) => file.path).toList()}');
+                                                  print(
+                                                      'Training Image Paths: ${training_picFiles.map((file) => file.path).toList()}');
+
+                                                  String imgPathFilesPaths =
+                                                      imgPathFiles
+                                                          .map((file) =>
+                                                              file.path)
+                                                          .join(',');
+                                                  String
+                                                      training_picFilesPaths =
+                                                      training_picFiles
+                                                          .map((file) =>
+                                                              file.path)
+                                                          .join(',');
+
+                                                  String uniqueId =
+                                                      generateUniqueId(6);
 
                                                   // Concatenate values if "Yes" is selected for teacher IDs
-                                                  String teacherIdsCreatedValue = inPersonQuantitativeController.getSelectedValue('idHasBeenCreated') ?? '';
-                                                  String teacherComfortableValue = teacherIdsCreatedValue == 'Yes'
-                                                      ? (inPersonQuantitativeController.getSelectedValue('teacherUsingTablet') ?? '')
-                                                      : '';
+                                                  String
+                                                      teacherIdsCreatedValue =
+                                                      inPersonQuantitativeController
+                                                              .getSelectedValue(
+                                                                  'idHasBeenCreated') ??
+                                                          '';
+                                                  String
+                                                      teacherComfortableValue =
+                                                      teacherIdsCreatedValue ==
+                                                              'Yes'
+                                                          ? (inPersonQuantitativeController
+                                                                  .getSelectedValue(
+                                                                      'teacherUsingTablet') ??
+                                                              '')
+                                                          : '';
 
-                                                  String concatenatedValue = '$teacherIdsCreatedValue $teacherComfortableValue';
-
-                                                  String base64Images = await inPersonQuantitativeController.convertImagesToBase64();
-                                                  String base64Images2 = await inPersonQuantitativeController.convertImagesToBase64_2();
-
-
+                                                  String concatenatedValue =
+                                                      '$teacherIdsCreatedValue $teacherComfortableValue';
 
                                                   // Create enrolment collection object
                                                   InPersonQuantitativeRecords
@@ -3323,7 +3551,7 @@ inPersonQuantitativeController                                                  
                                                         inPersonQuantitativeController
                                                             .correctUdiseCodeController
                                                             .text,
-                                                    imgpath:base64Images,
+                                                    imgpath: imgPathFilesPaths,
                                                     no_enrolled:
                                                         inPersonQuantitativeController
                                                             .noOfEnrolledStudentAsOnDateController
@@ -3338,7 +3566,7 @@ inPersonQuantitativeController                                                  
                                                                 .getSelectedValue(
                                                                     'class2Hours') ??
                                                             '',
-                                                        remarks_scheduling:
+                                                    remarks_scheduling:
                                                         inPersonQuantitativeController
                                                             .instructionProvidedRegardingClassSchedulingController
                                                             .text,
@@ -3367,13 +3595,14 @@ inPersonQuantitativeController                                                  
                                                                     'areAllTeacherTrained') ??
                                                             '',
                                                     teacher_ids:
-                                                    concatenatedValue, // Use the concatenated value here
+                                                        concatenatedValue, // Use the concatenated value here
 
                                                     no_staff:
                                                         inPersonQuantitativeController
                                                             .staafAttendedTrainingController
                                                             .text,
-                                                    training_pic: base64Images2,
+                                                    training_pic:
+                                                        training_picFilesPaths,
                                                     specifyOtherTopics:
                                                         inPersonQuantitativeController
                                                             .otherTopicsController
@@ -3463,12 +3692,12 @@ inPersonQuantitativeController                                                  
                                                     submitted_by: widget.userid
                                                         .toString(),
                                                     participant_name:
-                                                    participantsDataJson,
+                                                        participantsDataJson,
                                                     major_issue:
-                                                    issueAndResolutionJson,
+                                                        issueAndResolutionJson,
                                                     created_at: formattedDate
                                                         .toString(),
-                                                        unique_id: uniqueId,
+                                                    unique_id: uniqueId,
                                                   );
 
                                                   // Save data to local database
@@ -3486,14 +3715,17 @@ inPersonQuantitativeController                                                  
                                                     });
 
                                                     // Save the data to a file as JSON
-                                                    await saveDataToFile(enrolmentCollectionObj).then((_) {
+                                                    await saveDataToFile(
+                                                            enrolmentCollectionObj)
+                                                        .then((_) {
                                                       // If successful, show a snackbar indicating the file was downloaded
                                                       customSnackbar(
                                                         'File downloaded successfully',
                                                         'downloaded',
                                                         AppColors.primary,
                                                         AppColors.onPrimary,
-                                                        Icons.file_download_done,
+                                                        Icons
+                                                            .file_download_done,
                                                       );
                                                     }).catchError((error) {
                                                       // If there's an error during download, show an error snackbar
@@ -3505,7 +3737,6 @@ inPersonQuantitativeController                                                  
                                                         Icons.error,
                                                       );
                                                     });
-
 
                                                     customSnackbar(
                                                       'Submitted Successfully',
@@ -3735,7 +3966,6 @@ class _AddIssueBottomSheetState extends State<AddIssueBottomSheet> {
     );
   }
 }
-
 class Participants {
   String nameOfParticipants;
   String designation;
@@ -3757,7 +3987,7 @@ class _AddParticipantsBottomSheetState
     extends State<AddParticipantsBottomSheet> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final InPersonQuantitativeController inPersonQuantitativeController =
-      Get.put(InPersonQuantitativeController());
+  Get.put(InPersonQuantitativeController());
   String? _selectedDesignation;
 
   @override
@@ -3767,27 +3997,6 @@ class _AddParticipantsBottomSheetState
       _selectedDesignation =
           widget.existingRoles.first; // Default to the first role for editing
     }
-  }
-
-  void _showErrorDialog(String message) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Invalid'),
-          iconColor: Color(0xffffffff),
-          content: Text(message),
-          actions: <Widget>[
-            TextButton(
-              child: Text('OK'),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-            ),
-          ],
-        );
-      },
-    );
   }
 
   @override
@@ -3804,7 +4013,7 @@ class _AddParticipantsBottomSheetState
               CustomSizedBox(value: 20, side: 'height'),
               CustomTextFormField(
                 textController:
-                    inPersonQuantitativeController.participantsNameController,
+                inPersonQuantitativeController.participantsNameController,
                 labelText: 'Participants Name',
                 validator: (value) {
                   if (value!.isEmpty) {
@@ -3822,15 +4031,25 @@ class _AddParticipantsBottomSheetState
                 value: _selectedDesignation,
                 items: [
                   DropdownMenuItem(
-                      value: 'DigiLab Admin', child: Text('DigiLab Admin')),
+                    value: 'Teacher',
+                    child: Text('Teacher'),
+                  ),
                   DropdownMenuItem(
-                      value: 'HeadMaster', child: Text('HeadMaster')),
+                    value: 'HeadMaster',
+                    child: Text('HeadMaster'),
+                  ),
                   DropdownMenuItem(
-                      value: 'In Charge', child: Text('In Charge')),
-                  DropdownMenuItem(value: 'Teacher', child: Text('Teacher')),
+                    value: 'DigiLab Admin',
+                    child: Text('DigiLab Admin'),
+                  ),
                   DropdownMenuItem(
-                      value: 'Temporary Teacher',
-                      child: Text('Temporary Teacher')),
+                    value: 'In charge',
+                    child: Text('In charge'),
+                  ),
+                  DropdownMenuItem(
+                    value: 'Temporary Teacher',
+                    child: Text('Temporary Teacher'),
+                  ),
                 ],
                 onChanged: (value) {
                   setState(() {
@@ -3838,51 +4057,32 @@ class _AddParticipantsBottomSheetState
                   });
                 },
                 validator: (value) {
-                  if (value == null) {
+                  if (value == null || value.isEmpty) {
                     return 'Please select a designation';
                   }
                   return null;
                 },
               ),
               CustomSizedBox(value: 20, side: 'height'),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  CustomButton(
-                    title: 'Cancel',
-                    onPressedButton: () {
-                      Navigator.of(context).pop();
-                    },
-                  ),
-                  const Spacer(),
-                  CustomButton(
-                    title: 'Add',
-                    onPressedButton: () {
-                      if (_formKey.currentState!.validate()) {
-                        if (widget.existingRoles
-                            .contains(_selectedDesignation)) {
-                          _showErrorDialog(
-                              'The selected role is already assigned to another participant.');
-                        } else {
-                          final participants = Participants(
-                            nameOfParticipants: inPersonQuantitativeController
-                                .participantsNameController.text,
-                            designation: _selectedDesignation!,
-                          );
-                          // Clear the participant name
-                          inPersonQuantitativeController
-                              .participantsNameController
-                              .clear();
-                          setState(() {
-                            _selectedDesignation =
-                                null; // Clear the dropdown selection
-                          });
-                          Navigator.of(context).pop(participants);
-                        }
-                      }
-                    },
-                  ),
-                ],
+              CustomButton(
+                title: 'Add',
+                onPressedButton: () {
+                  if (_formKey.currentState!.validate()) {
+                    final participant = Participants(
+                      nameOfParticipants: inPersonQuantitativeController
+                          .participantsNameController.text,
+                      designation: _selectedDesignation!,
+                    );
+
+                    // Clear the text field and reset designation
+                    inPersonQuantitativeController.participantsNameController.clear();
+                    setState(() {
+                      _selectedDesignation = null; // Clear selected designation
+                    });
+
+                    Navigator.pop(context, participant);
+                  }
+                },
               ),
             ],
           ),
@@ -3891,7 +4091,6 @@ class _AddParticipantsBottomSheetState
     );
   }
 }
-
 
 // Function to save JSON data to a file
 
@@ -3920,19 +4119,58 @@ Future<void> saveDataToFile(InPersonQuantitativeRecords data) async {
       }
 
       if (directory != null && !await directory.exists()) {
-        await directory.create(recursive: true); // Create the directory if it doesn't exist
+        await directory.create(
+            recursive: true); // Create the directory if it doesn't exist
       }
 
-      final path = '${directory!.path}/inQuantitative_form_${data.submitted_by}.txt';
+      final path =
+          '${directory!.path}/nPerson_Quantitative_form_${data.submitted_by}.txt';
+      print('Saving file to: $path'); // Debugging output
 
       // Convert the EnrolmentCollectionModel object to a JSON string
       String jsonString = jsonEncode(data);
 
-      // Write the JSON string to a file
-      File file = File(path);
-      await file.writeAsString(jsonString);
+      // Handle Base64 conversion for images
+      List<String> base64Images = [];
+      for (String imagePath in data.imgpath!.split(',')) {
+        File imageFile = File(imagePath);
+        if (await imageFile.exists()) {
+          List<int> imageBytes = await imageFile.readAsBytes();
+          String base64Image = base64Encode(imageBytes);
+          base64Images.add(base64Image);
+        } else {
+          print('Image not found: $imagePath');
+        }
+      }
 
-      print('Data saved to $path');
+      for (String imagePath in data.training_pic!.split(',')) {
+        File imageFile = File(imagePath);
+        if (await imageFile.exists()) {
+          List<int> imageBytes = await imageFile.readAsBytes();
+          String base64Image = base64Encode(imageBytes);
+          base64Images.add(base64Image);
+        } else {
+          print('Image not found: $imagePath');
+        }
+      }
+
+      // Update the enrolment data to include Base64 image strings
+      Map<String, dynamic> updatedData = jsonDecode(jsonString);
+      updatedData['imgpath'] =
+          base64Images; // Store Base64 instead of file paths
+      updatedData['training_pic'] =
+          base64Images; // Store Base64 instead of file paths
+
+      // Write the updated JSON string to a file
+      File file = File(path);
+      await file.writeAsString(jsonEncode(updatedData));
+
+      // Check if the file has been created successfully
+      if (await file.exists()) {
+        print('File successfully created at: ${file.path}');
+      } else {
+        print('File not found after writing.');
+      }
     } else {
       print('Storage permission not granted');
       // Optionally, handle what happens if permission is denied

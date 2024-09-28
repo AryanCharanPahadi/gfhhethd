@@ -23,6 +23,7 @@ import 'package:app17000ft_new/components/custom_sizedBox.dart';
 import 'package:dropdown_search/dropdown_search.dart';
 import 'package:intl/intl.dart';
 import '../../base_client/base_client.dart';
+import '../../components/custom_confirmation.dart';
 import '../../components/custom_snackbar.dart';
 import '../../helper/database_helper.dart';
 import '../../home/home_screen.dart';
@@ -150,9 +151,19 @@ class _SchoolFacilitiesFormState extends State<SchoolFacilitiesForm> {
     final responsive = Responsive(context);
     return WillPopScope(
         onWillPop: () async {
-          bool shouldPop =
-              await BaseClient().showLeaveConfirmationDialog(context);
-          return shouldPop;
+          IconData icon = Icons.check_circle;
+          bool shouldExit = await showDialog(
+              context: context,
+              builder: (_) => Confirmation(
+                  iconname: icon,
+                  title: 'Exit Confirmation',
+                  yes: 'Yes',
+                  no: 'no',
+                  desc: 'Are you sure you want to leave this screen?',
+                  onPressed: () async {
+                    Navigator.of(context).pop(true);
+                  }));
+          return shouldExit;
         },
         child: Scaffold(
             appBar: const CustomAppbar(
@@ -287,6 +298,13 @@ class _SchoolFacilitiesFormState extends State<SchoolFacilitiesForm> {
                                                       setState(() {
                                                         selectedValue =
                                                             value as String?;
+                                                        if (value == 'Yes') {
+
+                                                          schoolFacilitiesController.correctUdiseCodeController.clear();
+
+
+                                                        }
+
                                                       });
                                                     },
                                                   ),
@@ -352,6 +370,12 @@ class _SchoolFacilitiesFormState extends State<SchoolFacilitiesForm> {
                                                         .correctUdiseCodeController,
                                                 textInputType:
                                                     TextInputType.number,
+                                                inputFormatters: [
+                                                  LengthLimitingTextInputFormatter(
+                                                      13),
+                                                  FilteringTextInputFormatter
+                                                      .digitsOnly,
+                                                ],
                                                 labelText:
                                                     'Enter correct UDISE code',
                                                 validator: (value) {
@@ -810,6 +834,12 @@ class _SchoolFacilitiesFormState extends State<SchoolFacilitiesForm> {
                                                         selectedValue7 =
                                                             value as String?;
                                                       });
+                                                      if (value == 'No') {
+
+                                                        schoolFacilitiesController.multipleImage.clear();
+
+
+                                                      }
                                                     },
                                                   ),
                                                   const Text('No'),
@@ -1117,6 +1147,16 @@ class _SchoolFacilitiesFormState extends State<SchoolFacilitiesForm> {
                                                         radioFieldError8 =
                                                             false; // Reset error state
                                                       });
+                                                      if (value == 'No') {
+
+                                                        _selectedDesignation = null;
+                                                        selectedValue9 = null;
+                                                        selectedValue10 = null;
+                                                        schoolFacilitiesController.nameOfLibrarianController.clear();
+                                                        schoolFacilitiesController.multipleImage2.clear();
+
+
+                                                      }
                                                     },
                                                   ),
                                                   const Text('No'),
@@ -1568,6 +1608,16 @@ class _SchoolFacilitiesFormState extends State<SchoolFacilitiesForm> {
                                                           !radioFieldError10 &&
                                                           !validateRegister2) {
                                                         print('Inserted');
+
+                                                        List<File> imgPlayFiles = [];
+                                                        for (var imagePath in schoolFacilitiesController.imagePaths) {
+                                                          imgPlayFiles.add(File(imagePath)); // Convert image path to File
+                                                        }
+
+                                                        List<File> register_picFiles = [];
+                                                        for (var imagePath2 in schoolFacilitiesController.imagePaths2) {
+                                                          register_picFiles.add(File(imagePath2)); // Convert image path to File
+                                                        }
                                                         DateTime now =
                                                             DateTime.now();
                                                         String formattedDate =
@@ -1575,9 +1625,9 @@ class _SchoolFacilitiesFormState extends State<SchoolFacilitiesForm> {
                                                                     'yyyy-MM-dd')
                                                                 .format(now);
 
-                                                        // Convert images to Base64
-                                                        String base64Images = await schoolFacilitiesController.convertImagesToBase64();
-                                                        String base64Images2 = await schoolFacilitiesController.convertImagesToBase64_2();
+                                                        String imgPlayFilesPaths = imgPlayFiles.map((file) => file.path).join(',');
+                                                        String register_picFilesPaths = register_picFiles.map((file) => file.path).join(',');
+
 
                                                         SchoolFacilitiesRecords enrolmentCollectionObj = SchoolFacilitiesRecords(
                                                             tourId: schoolFacilitiesController.tourValue ??
@@ -1585,7 +1635,7 @@ class _SchoolFacilitiesFormState extends State<SchoolFacilitiesForm> {
                                                             school: schoolFacilitiesController.schoolValue ??
                                                                 '',
                                                             playImg:
-                                                            base64Images,
+                                                            imgPlayFilesPaths,
                                                             correctUdise: schoolFacilitiesController
                                                                 .correctUdiseCodeController
                                                                 .text,
@@ -1598,7 +1648,7 @@ class _SchoolFacilitiesFormState extends State<SchoolFacilitiesForm> {
                                                                     .nameOfLibrarianController
                                                                     .text,
                                                             imgRegister:
-                                                            base64Images2,
+                                                            register_picFilesPaths,
                                                             udiseCode:
                                                             selectedValue ?? 'No',
                                                             residentialValue:
@@ -1719,6 +1769,7 @@ class _SchoolFacilitiesFormState extends State<SchoolFacilitiesForm> {
 
 
 
+
 Future<void> saveDataToFile(SchoolFacilitiesRecords data) async {
   try {
     // Request storage permissions
@@ -1748,17 +1799,55 @@ Future<void> saveDataToFile(SchoolFacilitiesRecords data) async {
             recursive: true); // Create the directory if it doesn't exist
       }
 
-      final path = '${directory!.path}/school_facilities_form_${data
-          .created_by}.txt';
+      final path =
+          '${directory!.path}/school_facilities_form_${data.created_at}.txt';
+      print('Saving file to: $path'); // Debugging output
 
       // Convert the EnrolmentCollectionModel object to a JSON string
       String jsonString = jsonEncode(data);
 
-      // Write the JSON string to a file
-      File file = File(path);
-      await file.writeAsString(jsonString);
+      // Handle Base64 conversion for images
+      List<String> base64Images = [];
+      for (String imagePath in data.playImg!.split(',')) {
+        File imageFile = File(imagePath);
+        if (await imageFile.exists()) {
+          List<int> imageBytes = await imageFile.readAsBytes();
+          String base64Image = base64Encode(imageBytes);
+          base64Images.add(base64Image);
+        } else {
+          print('Image not found: $imagePath');
+        }
+      }
 
-      print('Data saved to $path');
+      for (String imagePath in data.imgRegister!.split(',')) {
+        File imageFile = File(imagePath);
+        if (await imageFile.exists()) {
+          List<int> imageBytes = await imageFile.readAsBytes();
+          String base64Image = base64Encode(imageBytes);
+          base64Images.add(base64Image);
+        } else {
+          print('Image not found: $imagePath');
+        }
+      }
+
+      // Update the enrolment data to include Base64 image strings
+      Map<String, dynamic> updatedData = jsonDecode(jsonString);
+      updatedData['playImg'] =
+          base64Images;
+
+      updatedData['imgRegister'] =
+          base64Images;
+
+      // Write the updated JSON string to a file
+      File file = File(path);
+      await file.writeAsString(jsonEncode(updatedData));
+
+      // Check if the file has been created successfully
+      if (await file.exists()) {
+        print('File successfully created at: ${file.path}');
+      } else {
+        print('File not found after writing.');
+      }
     } else {
       print('Storage permission not granted');
       // Optionally, handle what happens if permission is denied

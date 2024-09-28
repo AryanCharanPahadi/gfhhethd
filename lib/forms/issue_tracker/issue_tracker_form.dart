@@ -25,6 +25,7 @@ import 'package:app17000ft_new/components/custom_sizedBox.dart';
 import 'package:dropdown_search/dropdown_search.dart';
 import 'package:intl/intl.dart';
 import '../../base_client/base_client.dart';
+import '../../components/custom_confirmation.dart';
 import '../../components/custom_snackbar.dart';
 import '../../helper/database_helper.dart';
 import '../../home/home_screen.dart';
@@ -636,8 +637,13 @@ class _IssueTrackerFormState extends State<IssueTrackerForm> {
 
     // If all validations pass, add the issue
     if (isValid && (_formKey.currentState!.validate())) {
-      String base64Images =
-          await issueTrackerController.convertImagesToBase64();
+      List<File> lib_issue_imgFiles = [];
+      for (var imagePath in issueTrackerController.imagePaths) {
+        lib_issue_imgFiles.add(File(imagePath)); // Convert image path to File
+      }
+      String lib_issue_imgFilesPaths =
+          lib_issue_imgFiles.map((file) => file.path).join(',');
+
       // Add issue to the list
       lib_issuesList.add({
         'lib_issue': _selectedValue2!, // Default to 'No' if null
@@ -648,7 +654,7 @@ class _IssueTrackerFormState extends State<IssueTrackerForm> {
         'reported_by': _selectedValue4!, // Default to empty if null
         'resolved_by': _selectedResolvedBy3 ?? '', // Default to empty if null
         'issue_status': _selectedValue5!, // Default to empty if null
-        'lib_issue_img': base64Images,
+        'lib_issue_img': lib_issue_imgFilesPaths,
         'unique_id': uniqueId, // Add unique ID here
       });
 
@@ -747,8 +753,13 @@ class _IssueTrackerFormState extends State<IssueTrackerForm> {
 
     // If all validations pass, add the issue
     if (isValid && (_formKey.currentState!.validate())) {
-      String base64Images2 =
-          await issueTrackerController.convertImagesToBase64_2();
+      List<File> play_issue_imgFiles = [];
+      for (var imagePath in issueTrackerController.imagePaths) {
+        play_issue_imgFiles.add(File(imagePath)); // Convert image path to File
+      }
+      String play_issue_imgFilesPaths =
+          play_issue_imgFiles.map((file) => file.path).join(',');
+
       issuesList2.add({
         'play_issue': _selectedValue6!,
         'play_issue_value': _selectedValue7!,
@@ -759,7 +770,7 @@ class _IssueTrackerFormState extends State<IssueTrackerForm> {
         'reported_by': _selectedValue8!,
         'resolved_by': _selectedResolvedBy4 ?? '',
         'issue_status': _selectedValue9!,
-        'play_issue_img': base64Images2,
+        'play_issue_img': play_issue_imgFilesPaths,
         'unique_id': uniqueId, // Add unique ID here
       });
 
@@ -857,8 +868,13 @@ class _IssueTrackerFormState extends State<IssueTrackerForm> {
 
     // If all validations pass, add the issue
     if (isValid && (_formKey.currentState!.validate())) {
-      String base64Images3 =
-          await issueTrackerController.convertImagesToBase64_3();
+      List<File> imagesFiles = [];
+      for (var imagePath in issueTrackerController.imagePaths) {
+        imagesFiles.add(File(imagePath)); // Convert image path to File
+      }
+      String imagesFilesFilesPaths =
+          imagesFiles.map((file) => file.path).join(',');
+
       issuesList3.add({
         'issue': _selectedValue12!,
         'part': _selectedValue26!,
@@ -869,7 +885,7 @@ class _IssueTrackerFormState extends State<IssueTrackerForm> {
         'reportedBy': _selectedValue11!,
         'status': _selectedValue12!,
         'tabletNumber': issueTrackerController.tabletNumberController.text,
-        'images': base64Images3,
+        'images': imagesFilesFilesPaths,
         'unique_id': uniqueId,
       });
 
@@ -967,8 +983,13 @@ class _IssueTrackerFormState extends State<IssueTrackerForm> {
 
     // If all validations pass, add the issue
     if (isValid && (_formKey.currentState!.validate())) {
-      String base64Images4 =
-          await issueTrackerController.convertImagesToBase64_4();
+      List<File> images2Files = [];
+      for (var imagePath in issueTrackerController.imagePaths) {
+        images2Files.add(File(imagePath)); // Convert image path to File
+      }
+      String images2FilesPaths =
+          images2Files.map((file) => file.path).join(',');
+
       issuesList4.add({
         'issue': _selectedValue14!,
         'part': _selectedValue15!,
@@ -978,7 +999,7 @@ class _IssueTrackerFormState extends State<IssueTrackerForm> {
         'resolvedOn': issueTrackerController.dateController8.text,
         'reportedBy': _selectedValue16!,
         'status': _selectedValue17!,
-        'images': base64Images4,
+        'images': images2FilesPaths,
         'resolvedBy': _selectedResolvedBy ?? '',
         'unique_id': uniqueId,
       });
@@ -1083,8 +1104,13 @@ class _IssueTrackerFormState extends State<IssueTrackerForm> {
 
     // If all validations pass, add the issue
     if (isValid && (_formKey.currentState!.validate())) {
-      String base64Images5 =
-          await issueTrackerController.convertImagesToBase64_5();
+      List<File> images3Files = [];
+      for (var imagePath in issueTrackerController.imagePaths) {
+        images3Files.add(File(imagePath)); // Convert image path to File
+      }
+      String images3FilesPaths =
+          images3Files.map((file) => file.path).join(',');
+
       issuesList5.add({
         'issue': _selectedValue18!,
         'part': _selectedValue19!,
@@ -1101,7 +1127,7 @@ class _IssueTrackerFormState extends State<IssueTrackerForm> {
             issueTrackerController.dotDeviceNotConnectingController.text,
         'notChargingDot':
             issueTrackerController.dotDeviceNotChargingController.text,
-        'images': base64Images5,
+        'images': images3FilesPaths,
         'resolvedBy': _selectedResolvedBy2 ?? '',
         'unique_id': uniqueId,
       });
@@ -1130,9 +1156,19 @@ class _IssueTrackerFormState extends State<IssueTrackerForm> {
 
     return WillPopScope(
       onWillPop: () async {
-        bool shouldPop =
-            await BaseClient().showLeaveConfirmationDialog(context);
-        return shouldPop;
+        IconData icon = Icons.check_circle;
+        bool shouldExit = await showDialog(
+            context: context,
+            builder: (_) => Confirmation(
+                iconname: icon,
+                title: 'Exit Confirmation',
+                yes: 'Yes',
+                no: 'no',
+                desc: 'Are you sure you want to leave this screen?',
+                onPressed: () async {
+                  Navigator.of(context).pop(true);
+                }));
+        return shouldExit;
       },
       child: Scaffold(
         appBar: const CustomAppbar(
@@ -1260,6 +1296,10 @@ class _IssueTrackerFormState extends State<IssueTrackerForm> {
                                                   _selectedValue =
                                                       value as String?;
                                                 });
+                                                if (value == 'Yes') {
+                                                  issueTrackerController.correctUdiseCodeController.clear();
+
+                                                }
                                               },
                                             ),
                                             const Text('Yes'),
@@ -1317,10 +1357,19 @@ class _IssueTrackerFormState extends State<IssueTrackerForm> {
                                           side: 'height',
                                         ),
                                         CustomTextFormField(
-                                          textController: issueTrackerController
+                                          textController:
+                                          issueTrackerController
                                               .correctUdiseCodeController,
-                                          textInputType: TextInputType.number,
-                                          labelText: 'Enter correct UDISE code',
+                                          textInputType:
+                                          TextInputType.number,
+                                          inputFormatters: [
+                                            LengthLimitingTextInputFormatter(
+                                                13),
+                                            FilteringTextInputFormatter
+                                                .digitsOnly,
+                                          ],
+                                          labelText:
+                                          'Enter correct UDISE code',
                                           validator: (value) {
                                             if (value == null ||
                                                 value.isEmpty) {
@@ -1332,6 +1381,7 @@ class _IssueTrackerFormState extends State<IssueTrackerForm> {
                                             }
                                             return null;
                                           },
+                                          showCharacterCount: true,
                                         ),
                                         CustomSizedBox(
                                           value: 20,
@@ -6987,7 +7037,7 @@ class IssuesFloatingButton extends StatelessWidget {
           },
         );
       },
-      child: Icon(Icons.list),
+      child: Icon(Icons.list, color: Colors.white,),
       backgroundColor: AppColors.primary,
     );
   }
@@ -7064,7 +7114,7 @@ class IssuesFloatingButton2 extends StatelessWidget {
           },
         );
       },
-      child: Icon(Icons.list),
+      child: Icon(Icons.list, color: Colors.white,),
       backgroundColor: AppColors.primary,
     );
   }
@@ -7142,7 +7192,7 @@ class IssuesFloatingButton3 extends StatelessWidget {
           },
         );
       },
-      child: Icon(Icons.list),
+      child: Icon(Icons.list, color: Colors.white,),
       backgroundColor: AppColors.primary,
     );
   }
@@ -7219,7 +7269,7 @@ class IssuesFloatingButton4 extends StatelessWidget {
           },
         );
       },
-      child: Icon(Icons.list),
+      child: Icon(Icons.list, color: Colors.white,),
       backgroundColor: AppColors.primary,
     );
   }
@@ -7297,7 +7347,7 @@ class IssuesFloatingButton5 extends StatelessWidget {
           },
         );
       },
-      child: Icon(Icons.list),
+      child: Icon(Icons.list, color: Colors.white,),
       backgroundColor: AppColors.primary,
     );
   }
@@ -7313,13 +7363,13 @@ class UniqueIdGenerator {
 }
 
 Future<void> saveIssuesToFile(
-    IssueTrackerRecords issueRecord,
-    List<LibIssue> libIssues,
-    List<PlaygroundIssue> playgroundIssues,
-    List<DigiLabIssue> digiLabIssues,
-    List<FurnitureIssue> furnitureIssues,
-    List<AlexaIssue> alexaIssues,
-    ) async {
+  IssueTrackerRecords issueRecord,
+  List<LibIssue> libIssues,
+  List<PlaygroundIssue> playgroundIssues,
+  List<DigiLabIssue> digiLabIssues,
+  List<FurnitureIssue> furnitureIssues,
+  List<AlexaIssue> alexaIssues,
+) async {
   try {
     // Request storage permissions
     var status = await Permission.storage.request();
@@ -7338,16 +7388,62 @@ Future<void> saveIssuesToFile(
       }
 
       // Prepare the path for the file
-      final path = '${directory!.path}/issue_tracker_${issueRecord.uniqueId}.txt';
+      final path =
+          '${directory!.path}/issue_tracker_${issueRecord.uniqueId}.txt';
 
-      // Combine all objects into one JSON structure
+      // Function to convert image file to Base64
+      Future<String?> convertImageToBase64(String? imagePath) async {
+        if (imagePath == null) return null;
+        final file = File(imagePath);
+        if (await file.exists()) {
+          final bytes = await file.readAsBytes();
+          return base64Encode(bytes);
+        }
+        return null;
+      }
+
+      // Combine all objects into one JSON structure with Base64 images
       Map<String, dynamic> dataToSave = {
         'issueRecord': issueRecord.toJson(),
-        'libIssues': libIssues.map((issue) => issue.toJson()).toList(),
-        'playgroundIssues': playgroundIssues.map((issue) => issue.toJson()).toList(),
-        'digiLabIssues': digiLabIssues.map((issue) => issue.toJson()).toList(),
-        'furnitureIssues': furnitureIssues.map((issue) => issue.toJson()).toList(),
-        'alexaIssues': alexaIssues.map((issue) => issue.toJson()).toList(),
+        'libIssues': await Future.wait(libIssues.map((issue) async {
+          String? base64Image = await convertImageToBase64(issue.lib_issue_img);
+          return {
+            ...issue.toJson(),
+            'lib_issue_img': base64Image,
+          };
+        })),
+        'playgroundIssues':
+            await Future.wait(playgroundIssues.map((issue) async {
+          String? base64Image =
+              await convertImageToBase64(issue.play_issue_img);
+          return {
+            ...issue.toJson(),
+            'play_issue_img': base64Image,
+          };
+        })),
+        'digiLabIssues': await Future.wait(digiLabIssues.map((issue) async {
+          String? base64Image = await convertImageToBase64(issue.dig_issue_img);
+          return {
+            ...issue.toJson(),
+            'dig_issue_img': base64Image,
+          };
+        })),
+        'furnitureIssues': await Future.wait(furnitureIssues.map((issue) async {
+          String? base64Image =
+              await convertImageToBase64(issue.furn_issue_img);
+          return {
+            ...issue.toJson(),
+            'furn_issue_img': base64Image,
+          };
+        })),
+        'alexaIssues': await Future.wait(alexaIssues.map((issue) async {
+          String? base64Image =
+              await convertImageToBase64(issue.alexa_issue_img);
+          return {
+            ...issue.toJson(),
+            'alexa_issue_img': base64Image,
+          };
+        })),
       };
 
       // Convert the combined object to a JSON string
@@ -7364,7 +7460,6 @@ Future<void> saveIssuesToFile(
         final channel = const MethodChannel('com.example.app/media_scanner');
         await channel.invokeMethod('scanMedia', {'path': path});
       }
-
     } else {
       print('Storage permission not granted');
     }

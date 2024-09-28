@@ -41,8 +41,19 @@ class _EnrolmentSyncState extends State<EnrolmentSync> {
   Widget build(BuildContext context) {
     return WillPopScope(
       onWillPop: () async {
-        bool shouldPop = await BaseClient().showLeaveConfirmationDialog(context);
-        return shouldPop;
+        IconData icon = Icons.check_circle;
+        bool shouldExit = await showDialog(
+            context: context,
+            builder: (_) => Confirmation(
+                iconname: icon,
+                title: 'Confirm Exit',
+                yes: 'Exit',
+                no: 'Cancel',
+                desc: 'Are you sure you want to Exit?',
+                onPressed: () async {
+                  Navigator.of(context).pop(true);
+                }));
+        return shouldExit;
       },
       child: Scaffold(
         appBar: const CustomAppbar(title: 'Enrollment Sync'),
@@ -89,144 +100,127 @@ class _EnrolmentSyncState extends State<EnrolmentSync> {
                       final item = schoolEnrolmentController.enrolmentList[index];
                       return ListTile(
                         title: Text(
-                          "${index + 1}. Tour ID: ${item.tourId!}\n    School: ${item.registerImage}",
+                          "${index + 1}. Tour ID: ${item.tourId!}\n    School: ${item.school!}",
                           style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            IconButton(
-                              color: AppColors.primary,
-                              icon: const Icon(Icons.edit),
-                              onPressed: () async {
-                                final existingRecord =
-                                schoolEnrolmentController
-                                    .enrolmentList[
-                                index];
-
-                                // Debug prints
-                                print(
-                                    'Navigating to Enrollment');
-                                print(
-                                    'Existing Record: $existingRecord');
-
-                                IconData icon = Icons.edit;
-
-                                // Show the confirmation dialog
-                                bool? shouldNavigate =
-                                await showDialog<bool>(
-                                  context: context,
-                                  builder: (_) => Confirmation(
-                                    iconname: icon,
-                                    title: 'Confirm Update',
-                                    yes: 'Confirm',
-                                    no: 'Cancel',
-                                    desc:
-                                    'Are you sure you want to Update this record?',
-                                    onPressed: () {
-                                      // Close the dialog and return true to indicate confirmation
-                                      Navigator.of(context)
-                                          .pop(true);
-                                    },
-                                  ),
-                                );
-
-                                // Check if the user confirmed the action
-                                if (shouldNavigate == true) {
-                                  // Debug print before navigation
-                                  print('Navigating now');
-
-                                  // Navigate to CabMeterTracingForm using Navigator.push
-                                  await Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) =>
-                                          SchoolEnrollmentForm(
-                                            userid: 'userid',
-
-                                            existingRecord:
-                                            existingRecord,
-                                          ),
-                                    ),
-                                  );
-
-                                  // Debug print after navigation
-                                  print('Navigation completed');
-                                } else {
-                                  // User canceled the action
-                                  print('Navigation canceled');
-                                }
-                              },
-                            ),
+                            // IconButton(
+                            //   color: AppColors.primary,
+                            //   icon: const Icon(Icons.edit),
+                            //   onPressed: () async {
+                            //     final existingRecord =
+                            //     schoolEnrolmentController.enrolmentList[index];
+                            //
+                            //     // Show confirmation dialog before navigating
+                            //     bool? shouldNavigate = await showDialog<bool>(
+                            //       context: context,
+                            //       builder: (_) => Confirmation(
+                            //         iconname: Icons.edit,
+                            //         title: 'Confirm Update',
+                            //         yes: 'Confirm',
+                            //         no: 'Cancel',
+                            //         desc: 'Are you sure you want to Update this record?',
+                            //         onPressed: () {
+                            //           Navigator.of(context).pop(true);
+                            //         },
+                            //       ),
+                            //     );
+                            //
+                            //     if (shouldNavigate == true) {
+                            //       await Navigator.push(
+                            //         context,
+                            //         MaterialPageRoute(
+                            //           builder: (context) => SchoolEnrollmentForm(
+                            //             userid: 'userid',
+                            //             existingRecord: existingRecord,
+                            //           ),
+                            //         ),
+                            //       );
+                            //     }
+                            //   },
+                            // ),
                             IconButton(
                               color: AppColors.primary,
                               icon: const Icon(Icons.sync),
                               onPressed: () async {
-                                IconData icon = Icons.check_circle;
-                                showDialog(
+                                // Check if the user is offline
+                                if (_networkManager.connectionType.value == 0) {
+                                  customSnackbar(
+                                    'Warning',
+                                    'You are offline, please connect to the internet',
+                                    AppColors.secondary,
+                                    AppColors.onSecondary,
+                                    Icons.warning,
+                                  );
+                                } else {
+                                  // Proceed if the user is online
+                                  IconData icon = Icons.check_circle;
+                                  showDialog(
                                     context: context,
                                     builder: (_) => Confirmation(
-                                        iconname: icon,
-                                        title: 'Confirm',
-                                        yes: 'Confirm',
-                                        no: 'Cancel',
-                                        desc: 'Are you sure you want to Sync?',
-                                        onPressed: () async {
-                                          setState(() {
-                                            isLoading.value = true; // Show loading spinner
-                                          });
-                                          if (_networkManager.connectionType.value == 0) {
-                                            customSnackbar(
-                                                'Warning',
-                                                'You are offline please connect to the internet',
-                                                AppColors.secondary,
-                                                AppColors.onSecondary,
-                                                Icons.warning);
-                                          } else {
-                                            if (_networkManager.connectionType.value == 1 ||
-                                                _networkManager.connectionType.value == 2) {
-                                              for (int i = 0; i <= 100; i++) {
-                                                await Future.delayed(const Duration(milliseconds: 50));
-                                                syncProgress.value = i / 100; // Update progress
-                                              }
-                                              print('ready to insert');
-                                              // Ensure that registerImageXFile is correctly handled
-                                              var rsp = await insertEnrolment(
-                                                  item.tourId,
-                                                  item.school,
-                                                  item.registerImage, // Ensure this is an XFile
-                                                  item.enrolmentData,
-                                                  item.remarks,
-                                                  item.createdAt,
-                                                  item.submittedBy,
+                                      iconname: icon,
+                                      title: 'Confirm',
+                                      yes: 'Confirm',
+                                      no: 'Cancel',
+                                      desc: 'Are you sure you want to Sync?',
+                                      onPressed: () async {
+                                        setState(() {
+                                          isLoading.value = true; // Show loading spinner
+                                          syncProgress.value = 0.0; // Reset progress
+                                          hasError.value = false; // Reset error state
+                                        });
 
-                                                  item.id,
-                                                    (progress) {
-                                                  syncProgress.value = progress; // Update sync progress
-                                                },
-                                              );
-                                              if (rsp['status'] == 1) {
-                                                customSnackbar(
-                                                    'Successfully',
-                                                    "${rsp['message']}",
-                                                    AppColors.secondary,
-                                                    AppColors.onSecondary,
-                                                    Icons.check);
-                                              } else {
-                                                hasError.value = true; // Set error state if sync fails
-                                                customSnackbar(
-                                                    "Error",
-                                                    "${rsp['message']}",
-                                                    AppColors.error,
-                                                    AppColors.onError,
-                                                    Icons.warning);
-                                              }
-                                              setState(() {
-                                                isLoading.value = false; // Hide loading spinner
-                                              });
-                                            }
+                                        if (_networkManager.connectionType.value == 1 ||
+                                            _networkManager.connectionType.value == 2) {
+                                          for (int i = 0; i <= 100; i++) {
+                                            await Future.delayed(const Duration(milliseconds: 50));
+                                            syncProgress.value = i / 100; // Update progress
                                           }
-                                        }));
+
+                                          // Call the insert function
+                                          var rsp = await insertEnrolment(
+                                            item.tourId,
+                                            item.school,
+                                            item.registerImage, // Multiple paths now handled
+                                            item.enrolmentData,
+                                            item.remarks,
+                                            item.createdAt,
+                                            item.submittedBy,
+                                            item.id,
+
+                                            (progress) {
+                                              syncProgress.value = progress; // Update sync progress
+                                            },
+                                          );
+
+                                          if (rsp['status'] == 1) {
+                                            customSnackbar(
+                                              'Successfully',
+                                              "${rsp['message']}",
+                                              AppColors.secondary,
+                                              AppColors.onSecondary,
+                                              Icons.check,
+                                            );
+                                          } else {
+                                            hasError.value = true; // Set error state if sync fails
+                                            customSnackbar(
+                                              "Error",
+                                              "${rsp['message']}",
+                                              AppColors.error,
+                                              AppColors.onError,
+                                              Icons.warning,
+                                            );
+                                          }
+                                          setState(() {
+                                            isLoading.value = false; // Hide loading spinner
+                                          });
+                                        }
+                                      },
+                                    ),
+                                  );
+                                }
                               },
                             ),
                           ],
@@ -246,11 +240,14 @@ class _EnrolmentSyncState extends State<EnrolmentSync> {
     );
   }
 }
+
+// Insert Enrollment with multiple image paths handling
 const String baseUrl = "https://mis.17000ft.org/apis/fast_apis/enrollmentCollection.php";
+
 Future<Map<String, dynamic>> insertEnrolment(
     String? tourId,
     String? school,
-    String? registerImagePath, // Path to the image file
+    String? registerImagePaths, // Multiple image paths
     String? enrolmentData,
     String? remarks,
     String? createdAt,
@@ -258,51 +255,41 @@ Future<Map<String, dynamic>> insertEnrolment(
     int? id,
     Function(double) updateProgress, // Progress callback
     ) async {
-  if (kDebugMode) {
-    print('Starting School Enrollment Data Insertion');
-    print('Tour ID: $tourId');
-    print('School: $school');
-    print('Register Image Path: $registerImagePath'); // Image file path
-    print('Enrolment Data: $enrolmentData');
-    print('Remarks: $remarks');
-    print('Created At: $createdAt');
-    print('Submitted By: $submittedBy');
-    print('Local ID: $id');
-  }
+  print('Starting School Enrollment Data Insertion');
 
   var request = http.MultipartRequest('POST', Uri.parse(baseUrl));
   request.headers["Accept"] = "application/json";
 
-  // Ensure enrolmentData is a valid JSON string
-  final String jsonData = enrolmentData ?? '';
-
-  // Add text fields
+  // Add fields
   request.fields.addAll({
     'id': id?.toString() ?? '',
     'tourId': tourId ?? '',
     'school': school ?? '',
-    'enrolmentData': jsonData, // Properly formatted JSON string
+    'enrolmentData': enrolmentData ?? '',
     'remarks': remarks ?? '',
     'createdAt': createdAt ?? '',
     'submittedBy': submittedBy ?? '',
   });
 
-  // Attach the image file if the path is provided
-  if (registerImagePath != null && registerImagePath.isNotEmpty) {
-    File imageFile = File(registerImagePath);
+  // Attach multiple image files
+  if (registerImagePaths != null && registerImagePaths.isNotEmpty) {
+    List<String> imagePaths = registerImagePaths.split(',');
 
-    if (imageFile.existsSync()) {
-      request.files.add(
-        await http.MultipartFile.fromPath(
-          'registerImage[]', // Key to be used in the API
-          imageFile.path,
-          contentType: MediaType('image', 'jpeg'), // Adjust content type based on image format
-        ),
-      );
-      print("Image file attached successfully.");
-    } else {
-      print('Image file does not exist at the provided path.');
-      return {"status": 0, "message": "Image file not found."};
+    for (String path in imagePaths) {
+      File imageFile = File(path.trim());
+      if (imageFile.existsSync()) {
+        request.files.add(
+          await http.MultipartFile.fromPath(
+            'registerImage[]', // Use array-like name for multiple images
+            imageFile.path,
+            contentType: MediaType('image', 'jpeg'),
+          ),
+        );
+        print("Image file $path attached successfully.");
+      } else {
+        print('Image file does not exist at the path: $path');
+        return {"status": 0, "message": "Image file not found at $path."};
+      }
     }
   } else {
     print('No image file path provided.');
@@ -312,18 +299,13 @@ Future<Map<String, dynamic>> insertEnrolment(
   var response = await request.send();
   var responseBody = await response.stream.bytesToString();
 
-  print('Server Response Body: $responseBody'); // Print the raw response
+  print('Server Response Body: $responseBody');
 
   if (response.statusCode == 200) {
-    if (responseBody.isEmpty) {
-      return {"status": 0, "message": "Empty response from server"};
-    }
-
     try {
       var parsedResponse = json.decode(responseBody);
-
       if (parsedResponse['status'] == 1) {
-        // Remove record from local database
+        // Delete local record if sync is successful
         await SqfliteDatabaseHelper().queryDelete(
           arg: id.toString(),
           table: 'schoolEnrolment',
@@ -333,19 +315,17 @@ Future<Map<String, dynamic>> insertEnrolment(
 
         // Refresh data
         await Get.find<SchoolEnrolmentController>().fetchData();
-
         return parsedResponse;
       } else {
-        print('Server Response Error: ${parsedResponse['message']}');
+        print('Error: ${parsedResponse['message']}');
         return {"status": 0, "message": parsedResponse['message'] ?? 'Failed to insert data'};
       }
     } catch (e) {
-      print('Error decoding JSON: $e');
+      print('Error parsing response: $e');
       return {"status": 0, "message": "Invalid response format"};
     }
   } else {
-    print('Server Error Response Code: ${response.statusCode}');
-    print('Server Error Response Body: $responseBody');
-    return {"status": 0, "message": "Server returned an error $responseBody"};
+    print('Server error: ${response.statusCode}');
+    return {"status": 0, "message": "Server returned error $responseBody"};
   }
 }

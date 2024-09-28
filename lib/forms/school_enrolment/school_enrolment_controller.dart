@@ -1,6 +1,6 @@
 
 import 'dart:io';
-
+import 'package:image/image.dart' as img;
 import 'package:app17000ft_new/constants/color_const.dart';
 import 'package:app17000ft_new/forms/school_enrolment/school_enrolment_model.dart';
 import 'package:app17000ft_new/forms/school_enrolment/school_enrolment_sync.dart';
@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:path_provider/path_provider.dart';
 
 import '../../base_client/baseClient_controller.dart';
 class SchoolEnrolmentController extends GetxController with BaseController{
@@ -38,31 +39,53 @@ class SchoolEnrolmentController extends GetxController with BaseController{
   List<String> _imagePaths = [];
   List<String> get imagePaths => _imagePaths;
 
-  Future<String> takePhoto(ImageSource source,) async {
+
+  Future<String> takePhoto(ImageSource source) async {
     final ImagePicker picker = ImagePicker();
     List<XFile> selectedImages = [];
-
-    _imagePaths = [];
     XFile? pickedImage;
+
     if (source == ImageSource.gallery) {
       selectedImages = await picker.pickMultiImage();
-      // if (type == 'lib') {
-      _multipleImage.addAll(selectedImages);
-      for (var path in _multipleImage) {
-        _imagePaths.add(path.path);
+      for (var selectedImage in selectedImages) {
+        // Compress each selected image
+        String compressedPath = await compressImage(selectedImage.path);
+        _multipleImage.add(XFile(compressedPath));
+        _imagePaths.add(compressedPath);
       }
       update();
-      //  return _imagePaths.toString();
     } else if (source == ImageSource.camera) {
       pickedImage = await picker.pickImage(source: source);
-      _multipleImage.add(pickedImage!);
-      for (var path in _multipleImage) {
-        _imagePaths.add(path.path);
+      if (pickedImage != null) {
+        // Compress the picked image
+        String compressedPath = await compressImage(pickedImage.path);
+        _multipleImage.add(XFile(compressedPath));
+        _imagePaths.add(compressedPath);
       }
       update();
     }
-    update();
+
     return _imagePaths.toString();
+  }
+
+  Future<String> compressImage(String imagePath) async {
+    // Load the image
+    final File imageFile = File(imagePath);
+    final img.Image? originalImage = img.decodeImage(imageFile.readAsBytesSync());
+
+    if (originalImage == null) return imagePath; // Return original path if decoding fails
+
+    // Resize the image (optional) and compress
+    final img.Image resizedImage = img.copyResize(originalImage, width: 768); // Change the width as needed
+    final List<int> compressedImage = img.encodeJpg(resizedImage, quality: 12); // Adjust quality (0-100)
+
+    // Save the compressed image to a new file
+    final Directory appDir = await getTemporaryDirectory();
+    final String compressedImagePath = '${appDir.path}/compressed_${DateTime.now().millisecondsSinceEpoch}.jpg';
+    final File compressedFile = File(compressedImagePath);
+    await compressedFile.writeAsBytes(compressedImage);
+
+    return compressedImagePath; // Return the path of the compressed image
   }
 
   setSchool(value)

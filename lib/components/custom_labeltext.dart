@@ -22,11 +22,11 @@ class LabelText extends StatelessWidget {
           softWrap: true,
           text: TextSpan(
               text: '',
-              style: AppStyles.inputLabel(context,textColor == null ? AppColors.onBackground : textColor!,16),
+              style: AppStyles.inputLabel(context,textColor == null ? AppColors.onBackground : textColor!,12),
               children: [
                 TextSpan(
                     text: label,
-                    style: AppStyles.inputLabel(context, textColor == null ? AppColors.onBackground : textColor!,16),),
+                    style: AppStyles.inputLabel(context, textColor == null ? AppColors.onBackground : textColor!,12),),
                 if (astrick == true)
                    TextSpan(
                       text: ' *',

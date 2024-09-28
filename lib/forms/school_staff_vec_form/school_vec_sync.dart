@@ -45,8 +45,19 @@ class _SchoolStaffVecSyncState extends State<SchoolStaffVecSync> {
   Widget build(BuildContext context) {
     return WillPopScope(
       onWillPop: () async {
-        bool shouldPop = await BaseClient().showLeaveConfirmationDialog(context);
-        return shouldPop;
+        IconData icon = Icons.check_circle;
+        bool shouldExit = await showDialog(
+            context: context,
+            builder: (_) => Confirmation(
+                iconname: icon,
+                title: 'Confirm Exit',
+                yes: 'Exit',
+                no: 'Cancel',
+                desc: 'Are you sure you want to Exit?',
+                onPressed: () async {
+                  Navigator.of(context).pop(true);
+                }));
+        return shouldExit;
       },
       child: Scaffold(
         appBar: const CustomAppbar(title: 'School Staff & SMC/VEC Details'),
@@ -105,124 +116,137 @@ class _SchoolStaffVecSyncState extends State<SchoolStaffVecSync> {
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            IconButton(
-                              color: AppColors.primary,
-                              icon: const Icon(Icons.edit),
-                              onPressed: () async {
-                                final existingRecord = schoolStaffVecController.schoolStaffVecList[index];
-
-                                // Show confirmation dialog
-                                bool? shouldNavigate = await showDialog<bool>(
-                                  context: context,
-                                  builder: (_) => Confirmation(
-                                    iconname: Icons.edit,
-                                    title: 'Confirm Update',
-                                    yes: 'Confirm',
-                                    no: 'Cancel',
-                                    desc: 'Are you sure you want to Update this record?',
-                                    onPressed: () {
-                                      Navigator.of(context).pop(true);
-                                    },
-                                  ),
-                                );
-
-                                // If confirmed, navigate to update form
-                                if (shouldNavigate == true) {
-                                  await Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => SchoolStaffVecForm(
-                                        userid: 'userid',
-                                        existingRecord: existingRecord,
-                                      ),
-                                    ),
-                                  );
-                                }
-                              },
-                            ),
+                            // IconButton(
+                            //   color: AppColors.primary,
+                            //   icon: const Icon(Icons.edit),
+                            //   onPressed: () async {
+                            //     final existingRecord = schoolStaffVecController.schoolStaffVecList[index];
+                            //
+                            //     // Show confirmation dialog
+                            //     bool? shouldNavigate = await showDialog<bool>(
+                            //       context: context,
+                            //       builder: (_) => Confirmation(
+                            //         iconname: Icons.edit,
+                            //         title: 'Confirm Update',
+                            //         yes: 'Confirm',
+                            //         no: 'Cancel',
+                            //         desc: 'Are you sure you want to Update this record?',
+                            //         onPressed: () {
+                            //           Navigator.of(context).pop(true);
+                            //         },
+                            //       ),
+                            //     );
+                            //
+                            //     // If confirmed, navigate to update form
+                            //     if (shouldNavigate == true) {
+                            //       await Navigator.push(
+                            //         context,
+                            //         MaterialPageRoute(
+                            //           builder: (context) => SchoolStaffVecForm(
+                            //             userid: 'userid',
+                            //             existingRecord: existingRecord,
+                            //           ),
+                            //         ),
+                            //       );
+                            //     }
+                            //   },
+                            // ),
                             IconButton(
                               color: AppColors.primary,
                               icon: const Icon(Icons.sync),
                               onPressed: () async {
-                                showDialog(
-                                  context: context,
-                                  builder: (_) => Confirmation(
-                                    iconname: Icons.sync,
-                                    title: 'Confirm',
-                                    yes: 'Confirm',
-                                    no: 'Cancel',
-                                    desc: 'Are you sure you want to Sync?',
-                                    onPressed: () async {
-                                      isLoading.value = true;
-                                      if (_networkManager.connectionType.value == 0) {
-                                        customSnackbar(
-                                          'Warning',
-                                          'You are offline, please connect to the internet',
-                                          AppColors.secondary,
-                                          AppColors.onSecondary,
-                                          Icons.warning,
-                                        );
-                                        isLoading.value = false;
-                                      } else {
-                                        // Syncing progress
-                                        for (int i = 0; i <= 100; i++) {
-                                          await Future.delayed(const Duration(milliseconds: 50));
-                                          syncProgress.value = i / 100; // Update progress
-                                        }
+                                // Check if the user is offline
+                                if (_networkManager.connectionType.value == 0) {
+                                  customSnackbar(
+                                    'Warning',
+                                    'You are offline, please connect to the internet',
+                                    AppColors.secondary,
+                                    AppColors.onSecondary,
+                                    Icons.warning,
+                                  );
+                                } else {
+                                  // Proceed if the user is online
+                                  IconData icon = Icons.check_circle;
+                                  showDialog(
+                                    context: context,
+                                    builder: (_) => Confirmation(
+                                      iconname: icon,
+                                      title: 'Confirm',
+                                      yes: 'Confirm',
+                                      no: 'Cancel',
+                                      desc: 'Are you sure you want to Sync?',
+                                      onPressed: () async {
+                                        setState(() {
+                                          isLoading.value = true; // Show loading spinner
+                                          syncProgress.value = 0.0; // Reset progress
+                                          hasError.value = false; // Reset error state
+                                        });
 
-                                        var rsp = await insertSchoolStaffVec(
-                                          item.school,
-                                          item.tourId,
-                                          item.udiseValue,
-                                          item.correctUdise,
-                                          item.headName,
-                                          item.headGender,
-                                          item.headMobile,
-                                          item.headEmail,
-                                          item.headDesignation,
-                                          item.totalTeachingStaff,
-                                          item.totalNonTeachingStaff,
-                                          item.totalStaff,
-                                          item.SmcVecName,
-                                          item.genderVec,
-                                          item.vecMobile,
-                                          item.vecEmail,
-                                          item.vecQualification,
-                                          item.vecTotal,
-                                          item.meetingDuration,
-                                          item.createdBy,
-                                          item.createdAt,
-                                          item.other,
-                                          item.otherQual,
-                                          item.id,
-                                              (progress) {
-                                            syncProgress.value = progress; // Update sync progress
-                                          },
-                                        );
+                                        if (_networkManager.connectionType.value == 1 ||
+                                            _networkManager.connectionType.value == 2) {
+                                          for (int i = 0; i <= 100; i++) {
+                                            await Future.delayed(const Duration(milliseconds: 50));
+                                            syncProgress.value = i / 100; // Update progress
+                                          }
 
-                                        if (rsp['status'] == 1) {
-                                          customSnackbar(
-                                            'Successfully',
-                                            "${rsp['message']}",
-                                            AppColors.secondary,
-                                            AppColors.onSecondary,
-                                            Icons.check,
+                                          // Call the insert function
+                                          var rsp = await insertSchoolStaffVec(
+                                            item.school,
+                                            item.tourId,
+                                            item.udiseValue,
+                                            item.correctUdise,
+                                            item.headName,
+                                            item.headGender,
+                                            item.headMobile,
+                                            item.headEmail,
+                                            item.headDesignation,
+                                            item.totalTeachingStaff,
+                                            item.totalNonTeachingStaff,
+                                            item.totalStaff,
+                                            item.SmcVecName,
+                                            item.genderVec,
+                                            item.vecMobile,
+                                            item.vecEmail,
+                                            item.vecQualification,
+                                            item.vecTotal,
+                                            item.meetingDuration,
+                                            item.createdBy,
+                                            item.createdAt,
+                                            item.other,
+                                            item.otherQual,
+                                            item.id,
+
+                                            (progress) {
+                                              syncProgress.value = progress; // Update sync progress
+                                            },
                                           );
-                                        } else {
-                                          hasError.value = true;
-                                          customSnackbar(
-                                            "Error",
-                                            "${rsp['message']}",
-                                            AppColors.error,
-                                            AppColors.onError,
-                                            Icons.warning,
-                                          );
+
+                                          if (rsp['status'] == 1) {
+                                            customSnackbar(
+                                              'Successfully',
+                                              "${rsp['message']}",
+                                              AppColors.secondary,
+                                              AppColors.onSecondary,
+                                              Icons.check,
+                                            );
+                                          } else {
+                                            hasError.value = true; // Set error state if sync fails
+                                            customSnackbar(
+                                              "Error",
+                                              "${rsp['message']}",
+                                              AppColors.error,
+                                              AppColors.onError,
+                                              Icons.warning,
+                                            );
+                                          }
+                                          setState(() {
+                                            isLoading.value = false; // Hide loading spinner
+                                          });
                                         }
-                                        isLoading.value = false;
-                                      }
-                                    },
-                                  ),
-                                );
+                                      },
+                                    ),
+                                  );
+                                }
                               },
                             ),
                           ],
@@ -374,8 +398,8 @@ Future insertSchoolStaffVec(
     }
 
     return parsedResponse;
-  } catch (error) {
-    print("Error: $error");
-    return {"status": 0, "message": "Something went wrong, Please contact Admin"};
+  } catch (responseBody) {
+    print("Error: $responseBody");
+    return {"status": 0, "message": "Something went wrong, Please contact Admin $responseBody"};
   }
 }

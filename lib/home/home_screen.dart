@@ -67,41 +67,39 @@ class _HomeScreenState extends State<HomeScreen> {
       },
       child: Scaffold(
         appBar: AppBar(
-          title: Row(
-            children: [
-              Text(
-                'Home',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: responsive.responsiveValue(small: 20, medium: 25, large: 30),
-                ),
-              ),
-              const SizedBox(width: 10), // Space between "Home" and status
-              Icon(
-                _isOnline ? Icons.wifi : Icons.wifi_off,
-                color: _isOnline ? Colors.green : Colors.red,
-              ),
-              const SizedBox(width: 5),
-              Text(
-                _isOnline ? 'Online' : 'Offline',
-                style: TextStyle(
-                  color: _isOnline ? Colors.green : Colors.red,
-                  fontSize: 16,
-                ),
-              ),
-            ],
+          title: Text(
+            'Home',
+              style: AppStyles.appBarTitle(context, AppColors.onPrimary)
           ),
           backgroundColor: AppColors.primary,
           actions: [
-            IconButton(
-              icon: const Icon(Icons.logout, color: Colors.white),
-              onPressed: () {
-                Get.to(() => LoginScreen());
-              },
+            Row(
+              children: [
+                Icon(
+                  _isOnline ? Icons.wifi : Icons.wifi_off,
+                  color: _isOnline ? Colors.white : Colors.red,
+                ),
+                const SizedBox(width: 5),
+                Text(
+                  _isOnline ? 'Online' : 'Offline',
+                  style: TextStyle(
+                    color: _isOnline ? Colors.white : Colors.white,
+                    fontSize: 16,
+                  ),
+                ),
+                const SizedBox(width: 20), // Adjust spacing between connectivity and logout button
+                IconButton(
+                  icon: const Icon(Icons.logout, color: Colors.white),
+                  onPressed: () {
+                    Get.to(() => LoginScreen());
+                  },
+                ),
+              ],
             ),
           ],
           iconTheme: const IconThemeData(color: Colors.white),
         ),
+
         drawer: const CustomDrawer(),
         body: RefreshIndicator(
           onRefresh: _refreshStatus,

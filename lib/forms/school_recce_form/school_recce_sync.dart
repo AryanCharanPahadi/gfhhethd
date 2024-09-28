@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:http_parser/http_parser.dart'; // for MediaType
 import 'package:app17000ft_new/base_client/base_client.dart';
 import 'package:app17000ft_new/components/custom_appBar.dart';
@@ -41,8 +42,19 @@ class _SchoolRecceSyncState extends State<SchoolRecceSync> {
   Widget build(BuildContext context) {
     return WillPopScope(
       onWillPop: () async {
-        bool shouldPop = await BaseClient().showLeaveConfirmationDialog(context);
-        return shouldPop;
+        IconData icon = Icons.check_circle;
+        bool shouldExit = await showDialog(
+            context: context,
+            builder: (_) => Confirmation(
+                iconname: icon,
+                title: 'Confirm Exit',
+                yes: 'Exit',
+                no: 'Cancel',
+                desc: 'Are you sure you want to Exit?',
+                onPressed: () async {
+                  Navigator.of(context).pop(true);
+                }));
+        return shouldExit;
       },
       child: Scaffold(
         appBar: const CustomAppbar(title: 'School Recce Sync'),
@@ -92,7 +104,7 @@ class _SchoolRecceSyncState extends State<SchoolRecceSync> {
                       final item = schoolRecceController.schoolRecceList[index];
                       return ListTile(
                         title: Text(
-                          "${index + 1}. Tour ID: ${item.tourId!}\n    School: ${item.school!}",
+                          "${index + 1}. Tour ID: ${item.academicYear!}\n    First: ${item.gradeReportYear1!}\n    Second: ${item.gradeReportYear2!}\n    3rd: ${item.gradeReportYear3!}",
                           style: const TextStyle(
                               fontWeight: FontWeight.bold),
                         ),
@@ -103,36 +115,41 @@ class _SchoolRecceSyncState extends State<SchoolRecceSync> {
                               color: AppColors.primary,
                               icon: const Icon(Icons.sync),
                               onPressed: () async {
-                                IconData icon = Icons.check_circle;
-                                showDialog(
-                                  context: context,
-                                  builder: (_) => Confirmation(
-                                    iconname: icon,
-                                    title: 'Confirm',
-                                    yes: 'Confirm',
-                                    no: 'Cancel',
-                                    desc: 'Are you sure you want to Sync?',
-                                    onPressed: () async {
-                                      if (_networkManager.connectionType.value == 0) {
-                                        customSnackbar(
-                                          'Warning',
-                                          'You are offline please connect to the internet',
-                                          AppColors.secondary,
-                                          AppColors.onSecondary,
-                                          Icons.warning,
-                                        );
-                                      } else {
+                                // Check if the user is offline
+                                if (_networkManager.connectionType.value == 0) {
+                                  customSnackbar(
+                                    'Warning',
+                                    'You are offline, please connect to the internet',
+                                    AppColors.secondary,
+                                    AppColors.onSecondary,
+                                    Icons.warning,
+                                  );
+                                } else {
+                                  // Proceed if the user is online
+                                  IconData icon = Icons.check_circle;
+                                  showDialog(
+                                    context: context,
+                                    builder: (_) => Confirmation(
+                                      iconname: icon,
+                                      title: 'Confirm',
+                                      yes: 'Confirm',
+                                      no: 'Cancel',
+                                      desc: 'Are you sure you want to Sync?',
+                                      onPressed: () async {
+                                        setState(() {
+                                          isLoading.value = true; // Show loading spinner
+                                          syncProgress.value = 0.0; // Reset progress
+                                          hasError.value = false; // Reset error state
+                                        });
+
                                         if (_networkManager.connectionType.value == 1 ||
                                             _networkManager.connectionType.value == 2) {
-                                          // Set loading to true before starting the sync process
-                                          isLoading.value = true;
-                                          hasError.value = false;
-
                                           for (int i = 0; i <= 100; i++) {
                                             await Future.delayed(const Duration(milliseconds: 50));
                                             syncProgress.value = i / 100; // Update progress
                                           }
 
+                                          // Call the insert function
                                           var rsp = await insertSchoolRecce(
                                             item.tourId,
                                             item.school,
@@ -192,7 +209,6 @@ class _SchoolRecceSyncState extends State<SchoolRecceSync> {
                                             },
                                           );
 
-                                          // Sync complete
                                           if (rsp['status'] == 1) {
                                             customSnackbar(
                                               'Successfully',
@@ -211,14 +227,14 @@ class _SchoolRecceSyncState extends State<SchoolRecceSync> {
                                               Icons.warning,
                                             );
                                           }
-
-                                          // Set loading to false after sync process completes
-                                          isLoading.value = false;
+                                          setState(() {
+                                            isLoading.value = false; // Hide loading spinner
+                                          });
                                         }
-                                      }
-                                    },
-                                  ),
-                                );
+                                      },
+                                    ),
+                                  );
+                                }
                               },
                             ),
                           ],
@@ -412,348 +428,259 @@ Future insertSchoolRecce(
   });
 
   try {
-    if (boardImg != null && boardImg.isNotEmpty) {
-      // Split the Base64-encoded images based on the separator (e.g., ',')
-      List<String> imageStrings = boardImg.split(',');
-      int totalImages = imageStrings.length;
-      // Iterate through the list of Base64-encoded images and add each as a multipart file
-      for (int i = 0; i < imageStrings.length; i++) {
-        String imageString = imageStrings[i].trim(); // Clean up any extra spaces
+    if ( boardImg!= null && boardImg.isNotEmpty) {
+      List<String> imagePaths = boardImg.split(',');
 
-        // Convert each Base64 image to Uint8List
-        Uint8List imageBytes = base64Decode(imageString);
-
-        // Create MultipartFile from the image bytes
-        var multipartFile = http.MultipartFile.fromBytes(
-          'boardImg[]', // Name of the field in the server request
-          imageBytes,
-          filename: 'boardImg${id ?? ''}_$i.jpg', // Unique file name for each image
-          contentType: MediaType('image', 'jpeg'), // Specify the content type
-        );
-
-        // Add the image to the request
-        request.files.add(multipartFile);
-        updateProgress((i + 1) / totalImages); // Use the callback to update progress
-        print('Sync progress: ${(i + 1) / totalImages * 100}%');
-        // Debugging: Log each image upload
-        print('Adding image $i to the request, filename: enrolment_image_${id ?? ''}_$i.jpg');
+      for (String path in imagePaths) {
+        File imageFile = File(path.trim());
+        if (imageFile.existsSync()) {
+          request.files.add(
+            await http.MultipartFile.fromPath(
+              'boardImg[]', // Use array-like name for multiple images
+              imageFile.path,
+              contentType: MediaType('image', 'jpeg'),
+            ),
+          );
+          print("Image file $path attached successfully.");
+        } else {
+          print('Image file does not exist at the path: $path');
+          return {"status": 0, "message": "Image file not found at $path."};
+        }
       }
-
-      // Debugging: Print the total number of images added
-      print('Total images added: ${request.files.length}');
+    } else {
+      print('No image file path provided.');
     }
 
-    if (buildingImg != null && buildingImg.isNotEmpty) {
-      // Split the Base64-encoded images based on the separator (e.g., ',')
-      List<String> imageStrings = buildingImg.split(',');
-      int totalImages = imageStrings.length;
-      // Iterate through the list of Base64-encoded images and add each as a multipart file
-      for (int i = 0; i < imageStrings.length; i++) {
-        String imageString = imageStrings[i].trim(); // Clean up any extra spaces
+    if ( buildingImg!= null && buildingImg.isNotEmpty) {
+      List<String> imagePaths = buildingImg.split(',');
 
-        // Convert each Base64 image to Uint8List
-        Uint8List imageBytes = base64Decode(imageString);
-
-        // Create MultipartFile from the image bytes
-        var multipartFile = http.MultipartFile.fromBytes(
-          'buildingImg[]', // Name of the field in the server request
-          imageBytes,
-          filename: 'buildingImg${id ?? ''}_$i.jpg', // Unique file name for each image
-          contentType: MediaType('image', 'jpeg'), // Specify the content type
-        );
-
-        // Add the image to the request
-        request.files.add(multipartFile);
-        updateProgress((i + 1) / totalImages); // Use the callback to update progress
-        print('Sync progress: ${(i + 1) / totalImages * 100}%');
-        // Debugging: Log each image upload
-        print('Adding image $i to the request, filename: enrolment_image_${id ?? ''}_$i.jpg');
+      for (String path in imagePaths) {
+        File imageFile = File(path.trim());
+        if (imageFile.existsSync()) {
+          request.files.add(
+            await http.MultipartFile.fromPath(
+              'buildingImg[]', // Use array-like name for multiple images
+              imageFile.path,
+              contentType: MediaType('image', 'jpeg'),
+            ),
+          );
+          print("Image file $path attached successfully.");
+        } else {
+          print('Image file does not exist at the path: $path');
+          return {"status": 0, "message": "Image file not found at $path."};
+        }
       }
-
-      // Debugging: Print the total number of images added
-      print('Total images added: ${request.files.length}');
+    } else {
+      print('No image file path provided.');
     }
 
-    if (registerImg != null && registerImg.isNotEmpty) {
-      // Split the Base64-encoded images based on the separator (e.g., ',')
-      List<String> imageStrings = registerImg.split(',');
-      int totalImages = imageStrings.length;
-      // Iterate through the list of Base64-encoded images and add each as a multipart file
-      for (int i = 0; i < imageStrings.length; i++) {
-        String imageString = imageStrings[i].trim(); // Clean up any extra spaces
+    if ( registerImg!= null && registerImg.isNotEmpty) {
+      List<String> imagePaths = registerImg.split(',');
 
-        // Convert each Base64 image to Uint8List
-        Uint8List imageBytes = base64Decode(imageString);
-
-        // Create MultipartFile from the image bytes
-        var multipartFile = http.MultipartFile.fromBytes(
-          'registerImg[]', // Name of the field in the server request
-          imageBytes,
-          filename: 'registerImg${id ?? ''}_$i.jpg', // Unique file name for each image
-          contentType: MediaType('image', 'jpeg'), // Specify the content type
-        );
-
-        // Add the image to the request
-        request.files.add(multipartFile);
-        updateProgress((i + 1) / totalImages); // Use the callback to update progress
-        print('Sync progress: ${(i + 1) / totalImages * 100}%');
-        // Debugging: Log each image upload
-        print('Adding image $i to the request, filename: enrolment_image_${id ?? ''}_$i.jpg');
+      for (String path in imagePaths) {
+        File imageFile = File(path.trim());
+        if (imageFile.existsSync()) {
+          request.files.add(
+            await http.MultipartFile.fromPath(
+              'registerImg[]', // Use array-like name for multiple images
+              imageFile.path,
+              contentType: MediaType('image', 'jpeg'),
+            ),
+          );
+          print("Image file $path attached successfully.");
+        } else {
+          print('Image file does not exist at the path: $path');
+          return {"status": 0, "message": "Image file not found at $path."};
+        }
       }
-
-      // Debugging: Print the total number of images added
-      print('Total images added: ${request.files.length}');
+    } else {
+      print('No image file path provided.');
     }
 
-    if (smartClassImg != null && smartClassImg.isNotEmpty) {
-      // Split the Base64-encoded images based on the separator (e.g., ',')
-      List<String> imageStrings = smartClassImg.split(',');
-      int totalImages = imageStrings.length;
-      // Iterate through the list of Base64-encoded images and add each as a multipart file
-      for (int i = 0; i < imageStrings.length; i++) {
-        String imageString = imageStrings[i].trim(); // Clean up any extra spaces
+    if ( smartClassImg!= null && smartClassImg.isNotEmpty) {
+      List<String> imagePaths = smartClassImg.split(',');
 
-        // Convert each Base64 image to Uint8List
-        Uint8List imageBytes = base64Decode(imageString);
-
-        // Create MultipartFile from the image bytes
-        var multipartFile = http.MultipartFile.fromBytes(
-          'smartClassImg[]', // Name of the field in the server request
-          imageBytes,
-          filename: 'smartClassImg${id ?? ''}_$i.jpg', // Unique file name for each image
-          contentType: MediaType('image', 'jpeg'), // Specify the content type
-        );
-
-        // Add the image to the request
-        request.files.add(multipartFile);
-        updateProgress((i + 1) / totalImages); // Use the callback to update progress
-        print('Sync progress: ${(i + 1) / totalImages * 100}%');
-        // Debugging: Log each image upload
-        print('Adding image $i to the request, filename: enrolment_image_${id ?? ''}_$i.jpg');
+      for (String path in imagePaths) {
+        File imageFile = File(path.trim());
+        if (imageFile.existsSync()) {
+          request.files.add(
+            await http.MultipartFile.fromPath(
+              'smartClassImg[]', // Use array-like name for multiple images
+              imageFile.path,
+              contentType: MediaType('image', 'jpeg'),
+            ),
+          );
+          print("Image file $path attached successfully.");
+        } else {
+          print('Image file does not exist at the path: $path');
+          return {"status": 0, "message": "Image file not found at $path."};
+        }
       }
-
-      // Debugging: Print the total number of images added
-      print('Total images added: ${request.files.length}');
+    } else {
+      print('No image file path provided.');
     }
 
-    if (projectorImg != null && projectorImg.isNotEmpty) {
-      // Split the Base64-encoded images based on the separator (e.g., ',')
-      List<String> imageStrings = projectorImg.split(',');
-      int totalImages = imageStrings.length;
-      // Iterate through the list of Base64-encoded images and add each as a multipart file
-      for (int i = 0; i < imageStrings.length; i++) {
-        String imageString = imageStrings[i].trim(); // Clean up any extra spaces
+    if ( projectorImg!= null && projectorImg.isNotEmpty) {
+      List<String> imagePaths = projectorImg.split(',');
 
-        // Convert each Base64 image to Uint8List
-        Uint8List imageBytes = base64Decode(imageString);
-
-        // Create MultipartFile from the image bytes
-        var multipartFile = http.MultipartFile.fromBytes(
-          'projectorImg[]', // Name of the field in the server request
-          imageBytes,
-          filename: 'projectorImg${id ?? ''}_$i.jpg', // Unique file name for each image
-          contentType: MediaType('image', 'jpeg'), // Specify the content type
-        );
-
-        // Add the image to the request
-        request.files.add(multipartFile);
-        updateProgress((i + 1) / totalImages); // Use the callback to update progress
-        print('Sync progress: ${(i + 1) / totalImages * 100}%');
-        // Debugging: Log each image upload
-        print('Adding image $i to the request, filename: enrolment_image_${id ?? ''}_$i.jpg');
+      for (String path in imagePaths) {
+        File imageFile = File(path.trim());
+        if (imageFile.existsSync()) {
+          request.files.add(
+            await http.MultipartFile.fromPath(
+              'projectorImg[]', // Use array-like name for multiple images
+              imageFile.path,
+              contentType: MediaType('image', 'jpeg'),
+            ),
+          );
+          print("Image file $path attached successfully.");
+        } else {
+          print('Image file does not exist at the path: $path');
+          return {"status": 0, "message": "Image file not found at $path."};
+        }
       }
-
-      // Debugging: Print the total number of images added
-      print('Total images added: ${request.files.length}');
+    } else {
+      print('No image file path provided.');
     }
 
-    if (computerImg != null && computerImg.isNotEmpty) {
-      // Split the Base64-encoded images based on the separator (e.g., ',')
-      List<String> imageStrings = computerImg.split(',');
-      int totalImages = imageStrings.length;
-      // Iterate through the list of Base64-encoded images and add each as a multipart file
-      for (int i = 0; i < imageStrings.length; i++) {
-        String imageString = imageStrings[i].trim(); // Clean up any extra spaces
+    if ( computerImg!= null && computerImg.isNotEmpty) {
+      List<String> imagePaths = computerImg.split(',');
 
-        // Convert each Base64 image to Uint8List
-        Uint8List imageBytes = base64Decode(imageString);
-
-        // Create MultipartFile from the image bytes
-        var multipartFile = http.MultipartFile.fromBytes(
-          'computerImg[]', // Name of the field in the server request
-          imageBytes,
-          filename: 'computerImg${id ?? ''}_$i.jpg', // Unique file name for each image
-          contentType: MediaType('image', 'jpeg'), // Specify the content type
-        );
-
-        // Add the image to the request
-        request.files.add(multipartFile);
-        updateProgress((i + 1) / totalImages); // Use the callback to update progress
-        print('Sync progress: ${(i + 1) / totalImages * 100}%');
-        // Debugging: Log each image upload
-        print('Adding image $i to the request, filename: enrolment_image_${id ?? ''}_$i.jpg');
+      for (String path in imagePaths) {
+        File imageFile = File(path.trim());
+        if (imageFile.existsSync()) {
+          request.files.add(
+            await http.MultipartFile.fromPath(
+              'computerImg[]', // Use array-like name for multiple images
+              imageFile.path,
+              contentType: MediaType('image', 'jpeg'),
+            ),
+          );
+          print("Image file $path attached successfully.");
+        } else {
+          print('Image file does not exist at the path: $path');
+          return {"status": 0, "message": "Image file not found at $path."};
+        }
       }
-
-      // Debugging: Print the total number of images added
-      print('Total images added: ${request.files.length}');
+    } else {
+      print('No image file path provided.');
     }
 
 
-    if (libImg != null && libImg.isNotEmpty) {
-      // Split the Base64-encoded images based on the separator (e.g., ',')
-      List<String> imageStrings = libImg.split(',');
-      int totalImages = imageStrings.length;
-      // Iterate through the list of Base64-encoded images and add each as a multipart file
-      for (int i = 0; i < imageStrings.length; i++) {
-        String imageString = imageStrings[i].trim(); // Clean up any extra spaces
+    if ( libImg!= null && libImg.isNotEmpty) {
+      List<String> imagePaths = libImg.split(',');
 
-        // Convert each Base64 image to Uint8List
-        Uint8List imageBytes = base64Decode(imageString);
-
-        // Create MultipartFile from the image bytes
-        var multipartFile = http.MultipartFile.fromBytes(
-          'libImg[]', // Name of the field in the server request
-          imageBytes,
-          filename: 'libImg${id ?? ''}_$i.jpg', // Unique file name for each image
-          contentType: MediaType('image', 'jpeg'), // Specify the content type
-        );
-
-        // Add the image to the request
-        request.files.add(multipartFile);
-        updateProgress((i + 1) / totalImages); // Use the callback to update progress
-        print('Sync progress: ${(i + 1) / totalImages * 100}%');
-        // Debugging: Log each image upload
-        print('Adding image $i to the request, filename: enrolment_image_${id ?? ''}_$i.jpg');
+      for (String path in imagePaths) {
+        File imageFile = File(path.trim());
+        if (imageFile.existsSync()) {
+          request.files.add(
+            await http.MultipartFile.fromPath(
+              'libImg[]', // Use array-like name for multiple images
+              imageFile.path,
+              contentType: MediaType('image', 'jpeg'),
+            ),
+          );
+          print("Image file $path attached successfully.");
+        } else {
+          print('Image file does not exist at the path: $path');
+          return {"status": 0, "message": "Image file not found at $path."};
+        }
       }
-
-      // Debugging: Print the total number of images added
-      print('Total images added: ${request.files.length}');
+    } else {
+      print('No image file path provided.');
     }
 
-    if (spaceImg != null && spaceImg.isNotEmpty) {
-      // Split the Base64-encoded images based on the separator (e.g., ',')
-      List<String> imageStrings = spaceImg.split(',');
-      int totalImages = imageStrings.length;
-      // Iterate through the list of Base64-encoded images and add each as a multipart file
-      for (int i = 0; i < imageStrings.length; i++) {
-        String imageString = imageStrings[i].trim(); // Clean up any extra spaces
+    if ( spaceImg!= null && spaceImg.isNotEmpty) {
+      List<String> imagePaths = spaceImg.split(',');
 
-        // Convert each Base64 image to Uint8List
-        Uint8List imageBytes = base64Decode(imageString);
-
-        // Create MultipartFile from the image bytes
-        var multipartFile = http.MultipartFile.fromBytes(
-          'spaceImg[]', // Name of the field in the server request
-          imageBytes,
-          filename: 'spaceImg${id ?? ''}_$i.jpg', // Unique file name for each image
-          contentType: MediaType('image', 'jpeg'), // Specify the content type
-        );
-
-        // Add the image to the request
-        request.files.add(multipartFile);
-        updateProgress((i + 1) / totalImages); // Use the callback to update progress
-        print('Sync progress: ${(i + 1) / totalImages * 100}%');
-        // Debugging: Log each image upload
-        print('Adding image $i to the request, filename: enrolment_image_${id ?? ''}_$i.jpg');
+      for (String path in imagePaths) {
+        File imageFile = File(path.trim());
+        if (imageFile.existsSync()) {
+          request.files.add(
+            await http.MultipartFile.fromPath(
+              'spaceImg[]', // Use array-like name for multiple images
+              imageFile.path,
+              contentType: MediaType('image', 'jpeg'),
+            ),
+          );
+          print("Image file $path attached successfully.");
+        } else {
+          print('Image file does not exist at the path: $path');
+          return {"status": 0, "message": "Image file not found at $path."};
+        }
       }
-
-      // Debugging: Print the total number of images added
-      print('Total images added: ${request.files.length}');
+    } else {
+      print('No image file path provided.');
     }
 
+    if ( enrollmentImg!= null && enrollmentImg.isNotEmpty) {
+      List<String> imagePaths = enrollmentImg.split(',');
 
-    if (enrollmentImg != null && enrollmentImg.isNotEmpty) {
-      // Split the Base64-encoded images based on the separator (e.g., ',')
-      List<String> imageStrings = enrollmentImg.split(',');
-      int totalImages = imageStrings.length;
-      // Iterate through the list of Base64-encoded images and add each as a multipart file
-      for (int i = 0; i < imageStrings.length; i++) {
-        String imageString = imageStrings[i].trim(); // Clean up any extra spaces
-
-        // Convert each Base64 image to Uint8List
-        Uint8List imageBytes = base64Decode(imageString);
-
-        // Create MultipartFile from the image bytes
-        var multipartFile = http.MultipartFile.fromBytes(
-          'enrollmentImg[]', // Name of the field in the server request
-          imageBytes,
-          filename: 'enrollmentImg${id ?? ''}_$i.jpg', // Unique file name for each image
-          contentType: MediaType('image', 'jpeg'), // Specify the content type
-        );
-
-        // Add the image to the request
-        request.files.add(multipartFile);
-        updateProgress((i + 1) / totalImages); // Use the callback to update progress
-        print('Sync progress: ${(i + 1) / totalImages * 100}%');
-        // Debugging: Log each image upload
-        print('Adding image $i to the request, filename: enrolment_image_${id ?? ''}_$i.jpg');
+      for (String path in imagePaths) {
+        File imageFile = File(path.trim());
+        if (imageFile.existsSync()) {
+          request.files.add(
+            await http.MultipartFile.fromPath(
+              'enrollmentImg[]', // Use array-like name for multiple images
+              imageFile.path,
+              contentType: MediaType('image', 'jpeg'),
+            ),
+          );
+          print("Image file $path attached successfully.");
+        } else {
+          print('Image file does not exist at the path: $path');
+          return {"status": 0, "message": "Image file not found at $path."};
+        }
       }
-
-      // Debugging: Print the total number of images added
-      print('Total images added: ${request.files.length}');
+    } else {
+      print('No image file path provided.');
     }
 
 
-    if (DigiLabRoomImg != null && DigiLabRoomImg.isNotEmpty) {
-      // Split the Base64-encoded images based on the separator (e.g., ',')
-      List<String> imageStrings = DigiLabRoomImg.split(',');
-      int totalImages = imageStrings.length;
-      // Iterate through the list of Base64-encoded images and add each as a multipart file
-      for (int i = 0; i < imageStrings.length; i++) {
-        String imageString = imageStrings[i].trim(); // Clean up any extra spaces
+    if ( DigiLabRoomImg!= null && DigiLabRoomImg.isNotEmpty) {
+      List<String> imagePaths = DigiLabRoomImg.split(',');
 
-        // Convert each Base64 image to Uint8List
-        Uint8List imageBytes = base64Decode(imageString);
-
-        // Create MultipartFile from the image bytes
-        var multipartFile = http.MultipartFile.fromBytes(
-          'DigiLabRoomImg[]', // Name of the field in the server request
-          imageBytes,
-          filename: 'DigiLabRoomImg${id ?? ''}_$i.jpg', // Unique file name for each image
-          contentType: MediaType('image', 'jpeg'), // Specify the content type
-        );
-
-        // Add the image to the request
-        request.files.add(multipartFile);
-        updateProgress((i + 1) / totalImages); // Use the callback to update progress
-        print('Sync progress: ${(i + 1) / totalImages * 100}%');
-        // Debugging: Log each image upload
-        print('Adding image $i to the request, filename: enrolment_image_${id ?? ''}_$i.jpg');
+      for (String path in imagePaths) {
+        File imageFile = File(path.trim());
+        if (imageFile.existsSync()) {
+          request.files.add(
+            await http.MultipartFile.fromPath(
+              'DigiLabRoomImg[]', // Use array-like name for multiple images
+              imageFile.path,
+              contentType: MediaType('image', 'jpeg'),
+            ),
+          );
+          print("Image file $path attached successfully.");
+        } else {
+          print('Image file does not exist at the path: $path');
+          return {"status": 0, "message": "Image file not found at $path."};
+        }
       }
-
-      // Debugging: Print the total number of images added
-      print('Total images added: ${request.files.length}');
+    } else {
+      print('No image file path provided.');
     }
 
-    if (libRoomImg != null && libRoomImg.isNotEmpty) {
-      // Split the Base64-encoded images based on the separator (e.g., ',')
-      List<String> imageStrings = libRoomImg.split(',');
-      int totalImages = imageStrings.length;
-      // Iterate through the list of Base64-encoded images and add each as a multipart file
-      for (int i = 0; i < imageStrings.length; i++) {
-        String imageString = imageStrings[i].trim(); // Clean up any extra spaces
+    if ( libRoomImg!= null && libRoomImg.isNotEmpty) {
+      List<String> imagePaths = libRoomImg.split(',');
 
-        // Convert each Base64 image to Uint8List
-        Uint8List imageBytes = base64Decode(imageString);
-
-        // Create MultipartFile from the image bytes
-        var multipartFile = http.MultipartFile.fromBytes(
-          'libRoomImg[]', // Name of the field in the server request
-          imageBytes,
-          filename: 'libRoomImg${id ?? ''}_$i.jpg', // Unique file name for each image
-          contentType: MediaType('image', 'jpeg'), // Specify the content type
-        );
-
-        // Add the image to the request
-        request.files.add(multipartFile);
-        updateProgress((i + 1) / totalImages); // Use the callback to update progress
-        print('Sync progress: ${(i + 1) / totalImages * 100}%');
-        // Debugging: Log each image upload
-        print('Adding image $i to the request, filename: enrolment_image_${id ?? ''}_$i.jpg');
+      for (String path in imagePaths) {
+        File imageFile = File(path.trim());
+        if (imageFile.existsSync()) {
+          request.files.add(
+            await http.MultipartFile.fromPath(
+              'libRoomImg[]', // Use array-like name for multiple images
+              imageFile.path,
+              contentType: MediaType('image', 'jpeg'),
+            ),
+          );
+          print("Image file $path attached successfully.");
+        } else {
+          print('Image file does not exist at the path: $path');
+          return {"status": 0, "message": "Image file not found at $path."};
+        }
       }
-
-      // Debugging: Print the total number of images added
-      print('Total images added: ${request.files.length}');
+    } else {
+      print('No image file path provided.');
     }
 
     // Send the request to the server

@@ -30,6 +30,7 @@ import 'package:app17000ft_new/components/custom_sizedBox.dart';
 import 'package:app17000ft_new/forms/school_enrolment/school_enrolment_controller.dart';
 import 'package:app17000ft_new/home/home_screen.dart';
 
+import '../../components/custom_confirmation.dart';
 import '../../utils/file_utils.dart';
 import '../alfa_observation_form/alfa_observation_controller.dart';
 import 'fln_observation_controller.dart';
@@ -269,22 +270,31 @@ class _FlnObservationFormState extends State<FlnObservationForm> {
 
   }
 
-
-  TableRow tableRowMethod(String classname, TextEditingController boyController,
-      TextEditingController girlController, ValueNotifier<int> totalNotifier) {
+  TableRow tableRowMethod(
+      String classname,
+      TextEditingController boyController,
+      TextEditingController girlController,
+      ValueNotifier<int> totalNotifier) {
     return TableRow(
       children: [
         TableCell(
           child: Center(
-              child: Text(classname,
-                  style: const TextStyle(
-                      fontSize: 18, fontWeight: FontWeight.bold))),
+            child: Text(
+              classname,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+          ),
         ),
         TableCell(
           child: TextFormField(
             controller: boyController,
             decoration: const InputDecoration(border: InputBorder.none),
             textAlign: TextAlign.center,
+            keyboardType: TextInputType.number,
+            inputFormatters: <TextInputFormatter>[
+              FilteringTextInputFormatter.digitsOnly, // Allow only digits
+              LengthLimitingTextInputFormatter(3), // Limit to 3 digits
+            ],
           ),
         ),
         TableCell(
@@ -292,6 +302,11 @@ class _FlnObservationFormState extends State<FlnObservationForm> {
             controller: girlController,
             decoration: const InputDecoration(border: InputBorder.none),
             textAlign: TextAlign.center,
+            keyboardType: TextInputType.number,
+            inputFormatters: <TextInputFormatter>[
+              FilteringTextInputFormatter.digitsOnly, // Allow only digits
+              LengthLimitingTextInputFormatter(3), // Limit to 3 digits
+            ],
           ),
         ),
         TableCell(
@@ -299,9 +314,11 @@ class _FlnObservationFormState extends State<FlnObservationForm> {
             valueListenable: totalNotifier,
             builder: (context, total, child) {
               return Center(
-                  child: Text(total.toString(),
-                      style: const TextStyle(
-                          fontSize: 18, fontWeight: FontWeight.bold)));
+                child: Text(
+                  total.toString(),
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+              );
             },
           ),
         ),
@@ -375,6 +392,11 @@ class _FlnObservationFormState extends State<FlnObservationForm> {
         TableCell(
           child: TextFormField(
             controller: teachingController,
+            keyboardType: TextInputType.number, // Set keyboard type to number
+            inputFormatters: [
+              FilteringTextInputFormatter.digitsOnly, // Allow only digits
+              LengthLimitingTextInputFormatter(3), // Limit to 3 digits
+            ],
             decoration: const InputDecoration(border: InputBorder.none),
             textAlign: TextAlign.center,
           ),
@@ -382,6 +404,11 @@ class _FlnObservationFormState extends State<FlnObservationForm> {
         TableCell(
           child: TextFormField(
             controller: nonTeachingController,
+            keyboardType: TextInputType.number, // Set keyboard type to number
+            inputFormatters: [
+              FilteringTextInputFormatter.digitsOnly, // Allow only digits
+              LengthLimitingTextInputFormatter(3), // Limit to 3 digits
+            ],
             decoration: const InputDecoration(border: InputBorder.none),
             textAlign: TextAlign.center,
           ),
@@ -477,6 +504,11 @@ class _FlnObservationFormState extends State<FlnObservationForm> {
             controller: boyController2,
             decoration: const InputDecoration(border: InputBorder.none),
             textAlign: TextAlign.center,
+            keyboardType: TextInputType.number, // Set keyboard type to number
+            inputFormatters: <TextInputFormatter>[
+              FilteringTextInputFormatter.digitsOnly, // Allow only digits
+              LengthLimitingTextInputFormatter(3), // Limit to 3 digits
+            ],
           ),
         ),
         TableCell(
@@ -484,6 +516,11 @@ class _FlnObservationFormState extends State<FlnObservationForm> {
             controller: girlController2,
             decoration: const InputDecoration(border: InputBorder.none),
             textAlign: TextAlign.center,
+            keyboardType: TextInputType.number, // Set keyboard type to number
+            inputFormatters: <TextInputFormatter>[
+              FilteringTextInputFormatter.digitsOnly, // Allow only digits
+              LengthLimitingTextInputFormatter(3), // Limit to 3 digits
+            ],
           ),
         ),
         TableCell(
@@ -501,14 +538,25 @@ class _FlnObservationFormState extends State<FlnObservationForm> {
     );
   }
 
+
   @override
   Widget build(BuildContext context) {
     final responsive = Responsive(context);
     return WillPopScope(
         onWillPop: () async {
-          bool shouldPop =
-              await BaseClient().showLeaveConfirmationDialog(context);
-          return shouldPop;
+          IconData icon = Icons.check_circle;
+          bool shouldExit = await showDialog(
+              context: context,
+              builder: (_) => Confirmation(
+                  iconname: icon,
+                  title: 'Exit Confirmation',
+                  yes: 'Yes',
+                  no: 'no',
+                  desc: 'Are you sure you want to leave this screen?',
+                  onPressed: () async {
+                    Navigator.of(context).pop(true);
+                  }));
+          return shouldExit;
         },
         child: Scaffold(
             appBar: const CustomAppbar(
@@ -643,7 +691,11 @@ class _FlnObservationFormState extends State<FlnObservationForm> {
                                                     flnObservationController
                                                         .setRadioValue(
                                                             'udiCode', value);
-                                                    flnObservationController.correctUdiseCodeController.clear();
+                                                    if (value == 'Yes') {
+
+                                                      flnObservationController.correctUdiseCodeController.clear();
+
+                                                    }
                                                   },
                                                 ),
                                                 const Text('Yes'),
@@ -1342,7 +1394,11 @@ class _FlnObservationFormState extends State<FlnObservationForm> {
                                                         .setRadioValue(
                                                             'activityCorner',
                                                             value);
-                                                    flnObservationController.clearTrainingInputs();
+                                                    if (value == 'No') {
+
+                                                      flnObservationController.multipleImage4.clear();
+
+                                                    }
                                                   },
                                                 ),
                                                 const Text('No'),
@@ -2090,8 +2146,11 @@ class _FlnObservationFormState extends State<FlnObservationForm> {
                                                         .setRadioValue(
                                                             'flnActivities',
                                                             value);
-                                                    flnObservationController.clearTrainingInputs2();
+                                                    if (value == 'No') {
 
+                                                      flnObservationController.multipleImage6.clear();
+
+                                                    }
                                                   },
                                                 ),
                                                 const Text('No'),
@@ -2536,8 +2595,12 @@ class _FlnObservationFormState extends State<FlnObservationForm> {
                                                         .setRadioValue(
                                                             'refresherTraining',
                                                             value);
-                                                    flnObservationController.clearTrainingInputs3();
+                                                    if (value == 'No') {
 
+                                                      flnObservationController.multipleImage7.clear();
+                                                      flnObservationController.noOfTeacherTrainedController.clear();
+
+                                                    }
                                                   },
                                                 ),
                                                 const Text('No'),
@@ -2857,8 +2920,12 @@ class _FlnObservationFormState extends State<FlnObservationForm> {
                                                     flnObservationController
                                                         .setRadioValue(
                                                             'reading', value);
-                                                    flnObservationController.clearTrainingInputs4();
+                                                    if (value == 'No') {
 
+                                                      flnObservationController.multipleImage8.clear();
+
+
+                                                    }
                                                   },
                                                 ),
                                                 const Text('No'),
@@ -3529,17 +3596,72 @@ class _FlnObservationFormState extends State<FlnObservationForm> {
                                                     DateTime now = DateTime.now();
                                                     String formattedDate = DateFormat('yyyy-MM-dd').format(now);
 
+                                                    List<File> nurTimeTableFiles = [];
+                                                    for (var imagePath in flnObservationController.imagePaths) {
+                                                      nurTimeTableFiles.add(File(imagePath)); // Convert image path to File
+                                                    }
 
-                                                    // Convert images to Base64
-                                                    String base64Images = await flnObservationController.convertImagesToBase64();
-                                                    String base64Images2 = await flnObservationController.convertImagesToBase64_2();
-                                                    String base64Images3 = await flnObservationController.convertImagesToBase64_3();
-                                                    String base64Images4 = await flnObservationController.convertImagesToBase64_4();
-                                                    String base64Images5 = await flnObservationController.convertImagesToBase64_5();
-                                                    String base64Images6 = await flnObservationController.convertImagesToBase64_6();
-                                                    String base64Images7 = await flnObservationController.convertImagesToBase64_7();
-                                                    String base64Images8 = await flnObservationController.convertImagesToBase64_8();
-                                                    String base64Images9 = await flnObservationController.convertImagesToBase64_9();
+                                                    List<File> lkgTimeTableFiles = [];
+                                                    for (var imagePath2 in flnObservationController.imagePaths2) {
+                                                      lkgTimeTableFiles.add(File(imagePath2)); // Convert image path to File
+                                                    }
+
+                                                    List<File> ukgTimeTableFiles = [];
+                                                    for (var imagePath3 in flnObservationController.imagePaths3) {
+                                                      ukgTimeTableFiles.add(File(imagePath3)); // Convert image path to File
+                                                    }
+
+                                                    List<File> activityImgFiles = [];
+                                                    for (var imagePath4 in flnObservationController.imagePaths4) {
+                                                      activityImgFiles.add(File(imagePath4)); // Convert image path to File
+                                                    }
+
+                                                    List<File> tlmImgFiles = [];
+                                                    for (var imagePath5 in flnObservationController.imagePaths5) {
+                                                      tlmImgFiles.add(File(imagePath5)); // Convert image path to File
+                                                    }
+
+                                                    List<File> flnImgFiles = [];
+                                                    for (var imagePath6 in flnObservationController.imagePaths6) {
+                                                      flnImgFiles.add(File(imagePath6)); // Convert image path to File
+                                                    }
+
+                                                    List<File> trainingImgFiles = [];
+                                                    for (var imagePath7 in flnObservationController.imagePaths7) {
+                                                      trainingImgFiles.add(File(imagePath7)); // Convert image path to File
+                                                    }
+
+                                                    List<File> libImgFiles = [];
+                                                    for (var imagePath8 in flnObservationController.imagePaths8) {
+                                                      libImgFiles.add(File(imagePath8)); // Convert image path to File
+                                                    }
+
+                                                    List<File> classImgFiles = [];
+                                                    for (var imagePath9 in flnObservationController.imagePaths9) {
+                                                      classImgFiles.add(File(imagePath9)); // Convert image path to File
+                                                    }
+
+                                                    String nurTimeTableFilePaths = nurTimeTableFiles.map((file) => file.path).join(',');
+                                                    String lkgTimeTableFilePaths = lkgTimeTableFiles.map((file) => file.path).join(',');
+                                                    String ukgTimeTableFilePaths = ukgTimeTableFiles.map((file) => file.path).join(',');
+                                                    String activityImgFilesPaths = activityImgFiles.map((file) => file.path).join(',');
+                                                    String trainingImgFilesPaths = trainingImgFiles.map((file) => file.path).join(',');
+                                                    String libImgFilesPaths = libImgFiles.map((file) => file.path).join(',');
+                                                    String tlmImgFilesPaths = tlmImgFiles.map((file) => file.path).join(',');
+                                                    String classImgFilesPaths = classImgFiles.map((file) => file.path).join(',');
+                                                    String flnImgFilesPaths = flnImgFiles.map((file) => file.path).join(',');
+
+
+                                                    print('Image Paths: ${nurTimeTableFiles.map((file) => file.path).toList()}');
+                                                    print('Image Paths: ${lkgTimeTableFiles.map((file) => file.path).toList()}');
+                                                    print('Image Paths: ${ukgTimeTableFiles.map((file) => file.path).toList()}');
+                                                    print('Image Paths: ${activityImgFiles.map((file) => file.path).toList()}');
+                                                    print('Image Paths: ${trainingImgFiles.map((file) => file.path).toList()}');
+                                                    print('Image Paths: ${libImgFiles.map((file) => file.path).toList()}');
+                                                    print('Image Paths: ${tlmImgFiles.map((file) => file.path).toList()}');
+                                                    print('Image Paths: ${classImgFiles.map((file) => file.path).toList()}');
+                                                    print('Image Paths: ${flnImgFiles.map((file) => file.path).toList()}');
+
 
                                                     // Create the enrolment collection object
                                                     FlnObservationModel flnObservationModel = FlnObservationModel(
@@ -3548,32 +3670,32 @@ class _FlnObservationFormState extends State<FlnObservationForm> {
                                                         udiseValue: flnObservationController.getSelectedValue('udiCode') ?? '',
                                                         correctUdise: flnObservationController.correctUdiseCodeController.text,
                                                         noStaffTrained: flnObservationController.noOfStaffTrainedController.text,
-                                                        imgNurTimeTable: base64Images,
-                                                        imgLKGTimeTable: base64Images2,
-                                                        imgUKGTimeTable: base64Images3,
+                                                        imgNurTimeTable: nurTimeTableFilePaths,
+                                                        imgLKGTimeTable: lkgTimeTableFilePaths,
+                                                        imgUKGTimeTable: ukgTimeTableFilePaths,
                                                         lessonPlanValue: flnObservationController.getSelectedValue('lessonPlan') ?? '',
                                                         activityValue: flnObservationController.getSelectedValue('activityCorner') ?? '',
-                                                        imgActivity: base64Images4,
-                                                        imgTLM: base64Images5,
+                                                        imgActivity: activityImgFilesPaths,
+                                                        imgTLM: tlmImgFilesPaths,
                                                         baselineValue: flnObservationController.getSelectedValue('baselineAssessment') ?? '',
                                                         baselineGradeReport: jsonEncode(jsonData),
                                                         flnConductValue: flnObservationController.getSelectedValue('flnActivities') ?? '',
                                                         flnGradeReport: jsonEncode(staffJsonData),
-                                                        imgFLN: base64Images6,
+                                                        imgFLN: flnImgFilesPaths,
                                                         refresherValue: flnObservationController.getSelectedValue('refresherTraining') ?? '',
                                                         numTrainedTeacher: flnObservationController.noOfTeacherTrainedController.text,
-                                                        imgTraining: base64Images7,
+                                                        imgTraining: trainingImgFilesPaths,
                                                         readingValue: flnObservationController.getSelectedValue('reading') ?? '',
                                                         libGradeReport: jsonEncode(readingJson),
-                                                        imgLib: base64Images8,
+                                                        imgLib: libImgFilesPaths,
                                                         methodologyValue: flnObservationController.getSelectedValue('classroom') ?? '',
-                                                        imgClass: base64Images9,
+                                                        imgClass: classImgFilesPaths,
                                                         observation: flnObservationController.remarksController.text,
                                                         createdAt: formattedDate.toString(),
                                                         submittedAt: formattedDate.toString(),
                                                         created_by: widget.userid.toString()
                                                     );
-                                                    print('Base64 Images: $base64Images');
+
                                                     int result = await LocalDbController().addData(flnObservationModel: flnObservationModel);
                                                     if (result > 0) {
                                                       flnObservationController.clearFields();
@@ -3661,15 +3783,134 @@ Future<void> saveDataToFile(FlnObservationModel data) async {
       }
 
       final path = '${directory!.path}/fln_observation_form_${data.created_by}.txt';
+      print('Saving file to: $path'); // Debugging output
 
       // Convert the EnrolmentCollectionModel object to a JSON string
       String jsonString = jsonEncode(data);
 
-      // Write the JSON string to a file
-      File file = File(path);
-      await file.writeAsString(jsonString);
+      // Handle Base64 conversion for images
+      List<String> base64Images = [];
+      for (String imagePath in data.imgNurTimeTable!.split(',')) {
+        File imageFile = File(imagePath);
+        if (await imageFile.exists()) {
+          List<int> imageBytes = await imageFile.readAsBytes();
+          String base64Image = base64Encode(imageBytes);
+          base64Images.add(base64Image);
+        } else {
+          print('Image not found: $imagePath');
+        }
+      }
 
-      print('Data saved to $path');
+      for (String imagePath in data.imgLKGTimeTable!.split(',')) {
+        File imageFile = File(imagePath);
+        if (await imageFile.exists()) {
+          List<int> imageBytes = await imageFile.readAsBytes();
+          String base64Image = base64Encode(imageBytes);
+          base64Images.add(base64Image);
+        } else {
+          print('Image not found: $imagePath');
+        }
+      }
+
+      for (String imagePath in data.imgUKGTimeTable!.split(',')) {
+        File imageFile = File(imagePath);
+        if (await imageFile.exists()) {
+          List<int> imageBytes = await imageFile.readAsBytes();
+          String base64Image = base64Encode(imageBytes);
+          base64Images.add(base64Image);
+        } else {
+          print('Image not found: $imagePath');
+        }
+      }
+
+      for (String imagePath in data.imgClass!.split(',')) {
+        File imageFile = File(imagePath);
+        if (await imageFile.exists()) {
+          List<int> imageBytes = await imageFile.readAsBytes();
+          String base64Image = base64Encode(imageBytes);
+          base64Images.add(base64Image);
+        } else {
+          print('Image not found: $imagePath');
+        }
+      }
+
+      for (String imagePath in data.imgLib!.split(',')) {
+        File imageFile = File(imagePath);
+        if (await imageFile.exists()) {
+          List<int> imageBytes = await imageFile.readAsBytes();
+          String base64Image = base64Encode(imageBytes);
+          base64Images.add(base64Image);
+        } else {
+          print('Image not found: $imagePath');
+        }
+      }
+
+      for (String imagePath in data.imgTraining!.split(',')) {
+        File imageFile = File(imagePath);
+        if (await imageFile.exists()) {
+          List<int> imageBytes = await imageFile.readAsBytes();
+          String base64Image = base64Encode(imageBytes);
+          base64Images.add(base64Image);
+        } else {
+          print('Image not found: $imagePath');
+        }
+      }
+
+      for (String imagePath in data.imgFLN!.split(',')) {
+        File imageFile = File(imagePath);
+        if (await imageFile.exists()) {
+          List<int> imageBytes = await imageFile.readAsBytes();
+          String base64Image = base64Encode(imageBytes);
+          base64Images.add(base64Image);
+        } else {
+          print('Image not found: $imagePath');
+        }
+      }
+
+      for (String imagePath in data.imgActivity!.split(',')) {
+        File imageFile = File(imagePath);
+        if (await imageFile.exists()) {
+          List<int> imageBytes = await imageFile.readAsBytes();
+          String base64Image = base64Encode(imageBytes);
+          base64Images.add(base64Image);
+        } else {
+          print('Image not found: $imagePath');
+        }
+      }
+
+      for (String imagePath in data.imgTLM!.split(',')) {
+        File imageFile = File(imagePath);
+        if (await imageFile.exists()) {
+          List<int> imageBytes = await imageFile.readAsBytes();
+          String base64Image = base64Encode(imageBytes);
+          base64Images.add(base64Image);
+        } else {
+          print('Image not found: $imagePath');
+        }
+      }
+
+      // Update the enrolment data to include Base64 image strings
+      Map<String, dynamic> updatedData = jsonDecode(jsonString);
+      updatedData['imgNurTimeTable'] = base64Images; // Store Base64 instead of file paths
+      updatedData['imgLKGTimeTable'] = base64Images; // Store Base64 instead of file paths
+      updatedData['imgUKGTimeTable'] = base64Images; // Store Base64 instead of file paths
+      updatedData['imgClass'] = base64Images; // Store Base64 instead of file paths
+      updatedData['imgLib'] = base64Images; // Store Base64 instead of file paths
+      updatedData['imgTraining'] = base64Images; // Store Base64 instead of file paths
+      updatedData['imgFLN'] = base64Images; // Store Base64 instead of file paths
+      updatedData['imgActivity'] = base64Images; // Store Base64 instead of file paths
+      updatedData['imgTLM'] = base64Images; // Store Base64 instead of file paths
+
+      // Write the updated JSON string to a file
+      File file = File(path);
+      await file.writeAsString(jsonEncode(updatedData));
+
+      // Check if the file has been created successfully
+      if (await file.exists()) {
+        print('File successfully created at: ${file.path}');
+      } else {
+        print('File not found after writing.');
+      }
     } else {
       print('Storage permission not granted');
       // Optionally, handle what happens if permission is denied
@@ -3678,4 +3919,3 @@ Future<void> saveDataToFile(FlnObservationModel data) async {
     print('Error saving data: $e');
   }
 }
-

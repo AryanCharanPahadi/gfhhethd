@@ -1,25 +1,23 @@
-import 'package:app17000ft_new/constants/color_const.dart';
-import 'package:app17000ft_new/forms/alfa_observation_form/alfa_observation_sync.dart';
-import 'package:app17000ft_new/forms/fln_observation_form/fln_observation_sync.dart';
-import 'package:app17000ft_new/forms/issue_tracker/issue_tracker_sync.dart';
-import 'package:app17000ft_new/forms/school_enrolment/school_enrolment_sync.dart';
-import 'package:app17000ft_new/forms/school_facilities_&_mapping_form/school_facilities_sync.dart';
-import 'package:app17000ft_new/helper/responsive_helper.dart';
-import 'package:app17000ft_new/helper/shared_prefernce.dart';
-import 'package:app17000ft_new/home/home_screen.dart';
-import 'package:app17000ft_new/home/tour_data.dart';
-import 'package:app17000ft_new/login/login_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:get/get.dart';
-import 'dart:convert';
-import 'package:shared_preferences/shared_preferences.dart';
+import '../constants/color_const.dart';
+import '../forms/alfa_observation_form/alfa_observation_sync.dart';
 import '../forms/cab_meter_tracking_form/cab_meter_tracing_sync.dart';
 import '../forms/edit_form/edit_form_page.dart';
+import '../forms/fln_observation_form/fln_observation_sync.dart';
 import '../forms/inPerson_qualitative_form/inPerson_qualitative_sync.dart';
 import '../forms/in_person_quantitative/in_person_quantitative_sync.dart';
+import '../forms/issue_tracker/issue_tracker_sync.dart';
+import '../forms/school_enrolment/school_enrolment_sync.dart';
+import '../forms/school_facilities_&_mapping_form/school_facilities_sync.dart';
 import '../forms/school_recce_form/school_recce_sync.dart';
 import '../forms/school_staff_vec_form/school_vec_sync.dart';
+import '../helper/responsive_helper.dart';
+import '../helper/shared_prefernce.dart';
+import '../home/home_screen.dart';
+import '../home/tour_data.dart';
+import '../login/login_screen.dart';
 
 class CustomDrawer extends StatefulWidget {
   const CustomDrawer({super.key});
@@ -36,20 +34,36 @@ class _CustomDrawerState extends State<CustomDrawer> {
   @override
   void initState() {
     super.initState();
-    _loadUserData();
+    _loadUserData(); // Load user data on initialization
   }
 
+  // This method loads user data from shared preferences
   Future<void> _loadUserData() async {
     var userData = await SharedPreferencesHelper.getUserData();
     if (userData != null && userData['user'] != null) {
       setState(() {
-        _username = userData['user']['username'] ?? 'Offline User';
-        _officeName = userData['user']['office_name'] ?? 'Office Unknown';
-        _version = userData['user']['offline_version'] ?? 'Version Unknown';
+        _username = userData['user']['username'] ?? '';
+        _officeName = userData['user']['office_name'] ?? '';
+        _version = userData['user']['offline_version'] ?? '';
       });
     }
   }
 
+  // Call this method whenever you want to refresh user data
+  Future<void> _refreshUserData() async {
+    await _loadUserData(); // Load user data again
+  }
+
+  // This method logs out the user and clears the state
+  Future<void> _logout() async {
+    await SharedPreferencesHelper.logout();
+    setState(() {
+      _username = '';
+      _officeName = '';
+      _version = '';
+    });
+    Get.offAll(() => const LoginScreen());
+  }
   @override
   Widget build(BuildContext context) {
     final responsive = Responsive(context);
@@ -68,7 +82,6 @@ class _CustomDrawerState extends State<CustomDrawer> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // Profile icon
                   CircleAvatar(
                     radius: 50,
                     backgroundColor: Colors.white,
@@ -79,7 +92,6 @@ class _CustomDrawerState extends State<CustomDrawer> {
                     ),
                   ),
                   const SizedBox(height: 15),
-                  // Display user name
                   Flexible(
                     child: Text(
                       _username.toUpperCase(),
@@ -93,7 +105,6 @@ class _CustomDrawerState extends State<CustomDrawer> {
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  // Display office name
                   Flexible(
                     child: Text(
                       _officeName.toUpperCase(),
@@ -130,6 +141,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
             onPressed: () {
               Navigator.pop(context);
               Get.to(() => const HomeScreen());
+              _refreshUserData(); // Optionally refresh data on navigation
             },
           ),
           DrawerMenu(
@@ -137,9 +149,10 @@ class _CustomDrawerState extends State<CustomDrawer> {
             icons: const FaIcon(FontAwesomeIcons.penToSquare),
             onPressed: () {
               Navigator.pop(context);
-              Get.to(() => EditFormPage());
+              Get.to(() => EditFormPage()); // Navigate to the Edit Form Screen
             },
           ),
+
           DrawerMenu(
             title: 'Tour Data',
             icons: const FaIcon(FontAwesomeIcons.house),
@@ -147,6 +160,7 @@ class _CustomDrawerState extends State<CustomDrawer> {
               Get.to(() => const SelectTourData());
             },
           ),
+
           DrawerMenu(
             title: 'Enrolment Sync',
             icons: const FaIcon(FontAwesomeIcons.database),
@@ -239,10 +253,9 @@ class _CustomDrawerState extends State<CustomDrawer> {
 
           DrawerMenu(
             title: 'Logout',
-            icons: const FaIcon(FontAwesomeIcons.signOut),
+            icons: const FaIcon(FontAwesomeIcons.arrowRightFromBracket),
             onPressed: () async {
-              await SharedPreferencesHelper.logout();
-              await Get.to(() => const LoginScreen());
+              await _logout(); // Logout and clear user data
             },
           ),
         ],
@@ -269,12 +282,10 @@ class DrawerMenu extends StatelessWidget {
       leading: icons,
       title: Text(title ?? '',
           style: TextStyle(
-              color: AppColors.onBackground,
-              fontSize: 14,
-              fontWeight: FontWeight.w600)),
+              color: AppColors.onBackground, fontSize: 14, fontWeight: FontWeight.w600)),
       onTap: () {
         if (onPressed != null) {
-          onPressed!();
+          onPressed!(); // Call the function using parentheses
         }
       },
     );

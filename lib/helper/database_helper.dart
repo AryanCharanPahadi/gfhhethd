@@ -30,7 +30,7 @@ final NetworkManager networkManager = Get.put(NetworkManager());
 class SqfliteDatabaseHelper {
   SqfliteDatabaseHelper.internal();
   static final SqfliteDatabaseHelper instance =
-      SqfliteDatabaseHelper.internal();
+  SqfliteDatabaseHelper.internal();
   factory SqfliteDatabaseHelper() => instance;
 
   // Name of the tables
@@ -75,7 +75,7 @@ class SqfliteDatabaseHelper {
     if (!dbExists) {
       ByteData data = await rootBundle.load(path.join("assets/", _dbName));
       List<int> bytes =
-          data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
+      data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
       await io.File(dbPathHomeWorkout).writeAsBytes(bytes, flush: true);
     }
     return await openDatabase(
@@ -858,25 +858,25 @@ class LocalDbController {
     return tourList;
   }
 
-    Future<List<CabMeterTracingRecords>> fetchLocalCabMeterTracingRecord() async {
-      var dbClient = await conn.db;
-      List<CabMeterTracingRecords> tourList = [];
-      try {
-        List<Map<String, dynamic>> maps = await dbClient
-            .rawQuery('SELECT * FROM ${SqfliteDatabaseHelper.cabMeter_tracing}');
-        for (var element in maps) {
-          tourList.add(CabMeterTracingRecords.fromJson(element));
-        }
-        print('localcab meter reoord length us ${tourList.length}');
-      } catch (e) {
-        print(
-            "Exception occurred while fetching CabMeterTracingRecords form records: $e");
+  Future<List<CabMeterTracingRecords>> fetchLocalCabMeterTracingRecord() async {
+    var dbClient = await conn.db;
+    List<CabMeterTracingRecords> tourList = [];
+    try {
+      List<Map<String, dynamic>> maps = await dbClient
+          .rawQuery('SELECT * FROM ${SqfliteDatabaseHelper.cabMeter_tracing}');
+      for (var element in maps) {
+        tourList.add(CabMeterTracingRecords.fromJson(element));
       }
-      return tourList;
+      print('localcab meter reoord length us ${tourList.length}');
+    } catch (e) {
+      print(
+          "Exception occurred while fetching CabMeterTracingRecords form records: $e");
     }
+    return tourList;
+  }
 
   Future<List<InPersonQuantitativeRecords>>
-      fetchLocalInPersonQuantitativeRecords() async {
+  fetchLocalInPersonQuantitativeRecords() async {
     var dbClient = await conn.db;
     List<InPersonQuantitativeRecords> tourList = [];
     try {
@@ -894,7 +894,7 @@ class LocalDbController {
   }
 
   Future<List<SchoolFacilitiesRecords>>
-      fetchLocalSchoolFacilitiesRecords() async {
+  fetchLocalSchoolFacilitiesRecords() async {
     var dbClient = await conn.db;
     List<SchoolFacilitiesRecords> tourList = [];
     try {
@@ -1061,7 +1061,7 @@ class LocalDbController {
   }
 
   Future<List<InPersonQualitativeRecords>>
-      fetchLocalInPersonQualitativeRecords() async {
+  fetchLocalInPersonQualitativeRecords() async {
     var dbClient = await conn.db;
     List<InPersonQualitativeRecords> tourList = [];
     try {

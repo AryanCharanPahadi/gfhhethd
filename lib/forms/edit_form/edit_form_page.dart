@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
 import '../../components/custom_appBar.dart';
+import '../../components/custom_confirmation.dart';
 import '../../components/custom_dropdown.dart';
 import '../../components/custom_sizedBox.dart';
 import '../../tourDetails/tour_controller.dart';
@@ -82,10 +83,20 @@ class _EditFormPageState extends State<EditFormPage> {
   Widget build(BuildContext context) {
     final responsive = Responsive(context);
     return WillPopScope(
-      onWillPop: () async {
-        bool shouldPop = await BaseClient().showLeaveConfirmationDialog(
-            context);
-        return shouldPop;
+      onWillPop:  () async {
+        IconData icon = Icons.check_circle;
+        bool shouldExit = await showDialog(
+            context: context,
+            builder: (_) => Confirmation(
+                iconname: icon,
+                title: 'Exit Confirmation',
+                yes: 'Yes',
+                no: 'no',
+                desc: 'Are you sure you want to leave this screen?',
+                onPressed: () async {
+                  Navigator.of(context).pop(true);
+                }));
+        return shouldExit;
       },
       child: Scaffold(
         appBar: const CustomAppbar(
@@ -255,11 +266,46 @@ class _EditFormPageState extends State<EditFormPage> {
               }
             });
 
-            // If there are no classes to display, show a message
+            // Wrapping the no enrollment data message in a card
             if (classWidgets.isEmpty) {
-              return const Text('No enrollment data available');
+              return Card(
+                elevation: 4,
+                margin: const EdgeInsets.symmetric(vertical: 8.0),
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('No enrollment data available'),
+                      SizedBox(height: 16), // Spacing before the button
+                      ElevatedButton(
+                        onPressed: () {
+                          // Navigate to add new enrollment data form
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => SchoolEnrollmentForm(
+                                userid: 'userid',
+                                existingRecord: EnrolmentCollectionModel(
+                                  enrolmentData: '{}', // Pass empty data for a new record
+                                  remarks: '',
+                                  tourId: '',
+                                  school: '',
+                                  submittedBy: '',
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                        child: const Text('Add New Enrollment Data'),
+                      ),
+                    ],
+                  ),
+                ),
+              );
             }
 
+            // Display the enrollment data in a card if available
             return Card(
               elevation: 4,
               margin: const EdgeInsets.symmetric(vertical: 8.0),
@@ -299,8 +345,8 @@ class _EditFormPageState extends State<EditFormPage> {
                               existingRecord: EnrolmentCollectionModel(
                                 enrolmentData: jsonEncode(enrolmentDataMap), // Pass the enrollment data as JSON
                                 remarks: enrollmentFetch['remarks'] ?? '',
+                                // tourId: enrollmentFetch['tourId'] ?? '',
                                 school: enrollmentFetch['school'] ?? '',
-
                                 submittedBy: enrollmentFetch['submittedBy'] ?? '',
                               ),
                             ),
@@ -317,7 +363,35 @@ class _EditFormPageState extends State<EditFormPage> {
             return const Text('Enrollment data format is incorrect');
           }
         } else {
-          return const Text('No enrollment data available');
+          // Show card with 'No enrollment data' message and add new button if no data is available
+          return Card(
+            elevation: 4,
+            margin: const EdgeInsets.symmetric(vertical: 8.0),
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('No enrollment data available'),
+                  SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () {
+                      // Navigate to add new enrollment data form
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => SchoolEnrollmentForm(
+
+                          ),
+                        ),
+                      );
+                    },
+                    child: const Text('Add New Enrollment Data'),
+                  ),
+                ],
+              ),
+            ),
+          );
         }
 
 
@@ -342,9 +416,8 @@ class _EditFormPageState extends State<EditFormPage> {
                         builder: (context) => SchoolStaffVecForm(
                           userid: 'userid', // Pass the actual userId here
                           existingRecord: SchoolStaffVecRecords(
-
-
                             headName: vec['headName'],
+                            // tourId: vec['tourId'],
                             headGender: vec['headGender'],
                             udiseValue: vec['udiseValue'],
                             correctUdise: vec['correctUdise'],
@@ -365,7 +438,6 @@ class _EditFormPageState extends State<EditFormPage> {
                             createdAt: vec['createdAt'],
                             other: vec['other'],
                             otherQual: vec['otherQual'],
-                            // Map more fields here if needed
                           ),
                         ),
                       ),
@@ -386,14 +458,41 @@ class _EditFormPageState extends State<EditFormPage> {
             ),
           );
         } else {
-          return const Text('No VEC data available');
+          return Card(
+            elevation: 4,
+            margin: const EdgeInsets.symmetric(vertical: 8.0),
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('No VEC data available'),
+                  SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () {
+                      // Navigate to the form for adding new VEC data
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => SchoolStaffVecForm(
+
+                          ),
+                        ),
+                      );
+                    },
+                    child: const Text('Add New VEC Data'),
+                  ),
+                ],
+              ),
+            ),
+          );
         }
+
 
       case 'facilities':
         if (formData.containsKey('facilities') &&
             formData['facilities'] != null &&
             formData['facilities'].isNotEmpty) {
-
           final facilitiesData = formData['facilities']; // Assuming facilitiesData is a list of facility records
           List<Widget> facilityWidgets = [];
 
@@ -417,6 +516,7 @@ class _EditFormPageState extends State<EditFormPage> {
                             userid: 'userid', // Pass the actual userId here
                             existingRecord: SchoolFacilitiesRecords(
                               residentialValue: facility['residentialValue'],
+                              // tourId: facility['tourId'],
                               electricityValue: facility['electricityValue'],
                               internetValue: facility['internetValue'],
                               udiseCode: facility['udiseValue'],
@@ -433,7 +533,6 @@ class _EditFormPageState extends State<EditFormPage> {
                               libRegisterValue: facility['libRegisterValue'],
                               created_by: facility['created_by'],
                               created_at: facility['created_at'],
-                              // Map more fields here if needed
                             ),
                           ),
                         ),
@@ -456,8 +555,37 @@ class _EditFormPageState extends State<EditFormPage> {
             ),
           );
         } else {
-          return const Text('No facilities data available');
+          return Card(
+            elevation: 4,
+            margin: const EdgeInsets.symmetric(vertical: 8.0),
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('No facilities data available'),
+                  SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () {
+                      // Navigate to the form for adding new facilities data
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => SchoolFacilitiesForm(
+
+
+                          ),
+                        ),
+                      );
+                    },
+                    child: const Text('Add New Facilities Data'),
+                  ),
+                ],
+              ),
+            ),
+          );
         }
+
 
       default:
         return const Text('No data available'); // Ensure a default return case

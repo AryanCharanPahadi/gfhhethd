@@ -23,6 +23,7 @@ import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../../base_client/base_client.dart';
+import '../../components/custom_confirmation.dart';
 import '../../components/custom_snackbar.dart';
 import '../../helper/database_helper.dart';
 import '../../home/home_screen.dart';
@@ -47,7 +48,7 @@ class _SchoolStaffVecFormState extends State<SchoolStaffVecForm> {
 
   List<String> splitSchoolLists = [];
   String? _selectedDesignation;
-  String? _selected2Designation;
+  String? selected2Designation;
   String? _selected3Designation;
   // Start of Showing Fields
   bool showBasicDetails = true; // For show Basic Details
@@ -118,7 +119,7 @@ class _SchoolStaffVecFormState extends State<SchoolStaffVecForm> {
       _selectedValue2 = existingRecord.headGender;
       _selectedValue3 = existingRecord.genderVec;
       _selectedDesignation = existingRecord.headDesignation;
-      _selected2Designation = existingRecord.vecQualification;
+      selected2Designation = existingRecord.vecQualification;
       _selected3Designation = existingRecord.meetingDuration;
 
       // Set other fields related to tour and school
@@ -151,9 +152,19 @@ class _SchoolStaffVecFormState extends State<SchoolStaffVecForm> {
     final responsive = Responsive(context);
     return WillPopScope(
       onWillPop: () async {
-        bool shouldPop =
-        await BaseClient().showLeaveConfirmationDialog(context);
-        return shouldPop;
+        IconData icon = Icons.check_circle;
+        bool shouldExit = await showDialog(
+            context: context,
+            builder: (_) => Confirmation(
+                iconname: icon,
+                title: 'Exit Confirmation',
+                yes: 'Yes',
+                no: 'no',
+                desc: 'Are you sure you want to leave this screen?',
+                onPressed: () async {
+                  Navigator.of(context).pop(true);
+                }));
+        return shouldExit;
       },
       child: Scaffold(
           appBar: const CustomAppbar(
@@ -284,6 +295,10 @@ class _SchoolStaffVecFormState extends State<SchoolStaffVecForm> {
                                                     _selectedValue =
                                                     value as String?;
                                                   });
+                                                  if (value == 'Yes') {
+                                                    schoolStaffVecController.correctUdiseCodeController.clear();
+
+                                                  }
                                                 },
                                               ),
                                               const Text('Yes'),
@@ -346,7 +361,12 @@ class _SchoolStaffVecFormState extends State<SchoolStaffVecForm> {
                                             schoolStaffVecController
                                                 .correctUdiseCodeController,
                                             textInputType: TextInputType.number,
-                                            labelText:
+                                            inputFormatters: [
+                                              LengthLimitingTextInputFormatter(
+                                                  13),
+                                              FilteringTextInputFormatter
+                                                  .digitsOnly,
+                                            ],                                            labelText:
                                             'Enter correct UDISE code',
                                             validator: (value) {
                                               if (value == null ||
@@ -901,7 +921,7 @@ class _SchoolStaffVecFormState extends State<SchoolStaffVecForm> {
                                             labelText: 'Select qualification',
                                             border: OutlineInputBorder(),
                                           ),
-                                          value: _selected2Designation,
+                                          value: selected2Designation,
                                           items: [
                                             DropdownMenuItem(
                                                 value: 'non_graduate',
@@ -918,7 +938,7 @@ class _SchoolStaffVecFormState extends State<SchoolStaffVecForm> {
                                           ],
                                           onChanged: (value) {
                                             setState(() {
-                                              _selected2Designation = value;
+                                    selected2Designation = value;
                                             });
                                           },
                                           validator: (value) {
@@ -930,6 +950,34 @@ class _SchoolStaffVecFormState extends State<SchoolStaffVecForm> {
                                         ),
                                         CustomSizedBox(
                                             value: 20, side: 'height'),
+
+                                    if (selected2Designation ==
+                                    'others_qualification') ...[
+                                    LabelText(
+                                    label: 'Please Specify Other',
+                                    astrick: true,
+                                    ),
+                                    CustomSizedBox(
+                                    value: 20, side: 'height'),
+                                    CustomTextFormField(
+                                    textController:
+                                    schoolStaffVecController
+                                        .QualSpecifyController,
+                                    labelText: 'Write here...',
+                                    maxlines: 2,
+                                    validator: (value) {
+                                    if (value!.isEmpty) {
+                                    return 'Please fill this field';
+                                    }
+
+                                    if (value.length < 25) {
+                                    return 'Must be at least 25 characters long';
+                                    }
+                                    return null;
+                                    },
+                                    showCharacterCount: true,
+                                    ),
+                                        ],
                                         LabelText(
                                           label: 'Total SMC VEC Staff',
                                           astrick: true,
@@ -988,7 +1036,9 @@ class _SchoolStaffVecFormState extends State<SchoolStaffVecForm> {
                                           onChanged: (value) {
                                             setState(() {
                                               _selected3Designation = value;
+
                                             });
+
                                           },
                                           validator: (value) {
                                             if (value == null) {
@@ -999,6 +1049,33 @@ class _SchoolStaffVecFormState extends State<SchoolStaffVecForm> {
                                         ),
                                         CustomSizedBox(
                                             value: 20, side: 'height'),
+                                        if (_selected3Designation ==
+                                            'others_frequency') ...[
+                                          LabelText(
+                                            label: 'Please Specify Other',
+                                            astrick: true,
+                                          ),
+                                          CustomSizedBox(
+                                              value: 20, side: 'height'),
+                                          CustomTextFormField(
+                                            textController:
+                                            schoolStaffVecController
+                                                .QualSpecify2Controller,
+                                            labelText: 'Write here...',
+                                            maxlines: 2,
+                                            validator: (value) {
+                                              if (value!.isEmpty) {
+                                                return 'Please fill this field';
+                                              }
+
+                                              if (value.length < 25) {
+                                                return 'Must be at least 25 characters long';
+                                              }
+                                              return null;
+                                            },
+                                            showCharacterCount: true,
+                                          ),
+                                        ],
                                         Row(
                                           children: [
                                             CustomButton(
@@ -1067,7 +1144,7 @@ class _SchoolStaffVecFormState extends State<SchoolStaffVecForm> {
                                                         genderVec: _selectedValue3!,
                                                         headDesignation: _selectedDesignation!,
                                                         meetingDuration: _selected3Designation!,
-                                                        vecQualification: _selected2Designation!,
+                                                        vecQualification: selected2Designation!,
                                                         createdAt: formattedDate.toString(),
                                                         createdBy: widget.userid.toString());
 

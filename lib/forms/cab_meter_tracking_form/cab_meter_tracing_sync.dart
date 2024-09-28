@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:http_parser/http_parser.dart'; // for MediaType
 import 'package:app17000ft_new/base_client/base_client.dart';
 import 'package:app17000ft_new/components/custom_appBar.dart';
@@ -40,8 +41,19 @@ class _CabTracingSyncState extends State<CabTracingSync> {
   Widget build(BuildContext context) {
     return WillPopScope(
       onWillPop: () async {
-        bool shouldPop = await BaseClient().showLeaveConfirmationDialog(context);
-        return shouldPop;
+        IconData icon = Icons.check_circle;
+        bool shouldExit = await showDialog(
+            context: context,
+            builder: (_) => Confirmation(
+                iconname: icon,
+                title: 'Confirm Exit',
+                yes: 'Exit',
+                no: 'Cancel',
+                desc: 'Are you sure you want to Exit?',
+                onPressed: () async {
+                  Navigator.of(context).pop(true);
+                }));
+        return shouldExit;
       },
       child: Scaffold(
         appBar: const CustomAppbar(title: 'Cab Meter Tracing Sync'),
@@ -85,7 +97,7 @@ class _CabTracingSyncState extends State<CabTracingSync> {
                       final item = cabMeterTracingController.cabMeterTracingList[index];
                       return ListTile(
                         title: Text(
-                          "${index + 1}. Tour ID: ${item.tour_id}\n    Vehicle No. ${item.meter_reading}\n    Driver Name: ${item.driver_name}",
+                          "${index + 1}. Tour ID: ${item.tour_id}\n    Vehicle No. ${item.vehicle_num}\n    Driver Name: ${item.driver_name}",
                           style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
                         trailing: Row(
@@ -235,26 +247,28 @@ Future<Map<String, dynamic>> insertCabMeterTracing(
     'tour_id': tour_id ?? '',
   });
 
-  if (image != null && image.isNotEmpty) {
-    List<String> imageStrings = image.split(',');
-    int totalImages = imageStrings.length;
+  // Attach multiple image files
+  if ( image!= null && image.isNotEmpty) {
+    List<String> imagePaths = image.split(',');
 
-    for (int i = 0; i < imageStrings.length; i++) {
-      String imageString = imageStrings[i].trim();
-      Uint8List imageBytes = base64Decode(imageString);
-
-      var multipartFile = http.MultipartFile.fromBytes(
-        'image[]',
-        imageBytes,
-        filename: 'image${id ?? ''}_$i.jpg',
-        contentType: MediaType('image', 'jpeg'),
-      );
-
-      request.files.add(multipartFile);
-      // Update sync progress after each image is added
-      updateProgress((i + 1) / totalImages); // Use the callback to update progress
-      print('Sync progress: ${(i + 1) / totalImages * 100}%');
+    for (String path in imagePaths) {
+      File imageFile = File(path.trim());
+      if (imageFile.existsSync()) {
+        request.files.add(
+          await http.MultipartFile.fromPath(
+            'image[]', // Use array-like name for multiple images
+            imageFile.path,
+            contentType: MediaType('image', 'jpeg'),
+          ),
+        );
+        print("Image file $path attached successfully.");
+      } else {
+        print('Image file does not exist at the path: $path');
+        return {"status": 0, "message": "Image file not found at $path."};
+      }
     }
+  } else {
+    print('No image file path provided.');
   }
 
   try {
@@ -268,8 +282,8 @@ Future<Map<String, dynamic>> insertCabMeterTracing(
     }
 
     return parsedResponse;
-  } catch (error) {
-    print("Error: $error");
-    return {"status": 0, "message": "Something went wrong, Please contact Admin"};
+  } catch (responseBody) {
+    print("Error: $responseBody");
+    return {"status": 0, "message": "Something went wrong, Please contact Admin $responseBody"};
   }
 }
